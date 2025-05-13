@@ -157,6 +157,7 @@ func (h *TradeHandler) UpdateTrade(c *gin.Context) {
 		Currency:  updatedTrade.Currency,
 		AccountID: updatedTrade.AccountID,
 		Reason:    updatedTrade.Reason,
+		CreatedAt: updatedTrade.CreatedAt,
 	}
 	c.JSON(http.StatusOK, tradeResponse)
 }
