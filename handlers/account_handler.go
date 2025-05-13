@@ -29,14 +29,14 @@ func (h *AccountHandler) ListAccounts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch accounts"})
 		return
 	}
-	responses := make([]models.AccountResponse, len(accounts))
-	for i, acc := range accounts {
-		responses[i] = models.AccountResponse{
+	responses := []models.AccountResponse{}
+	for _, acc := range accounts {
+		responses = append(responses, models.AccountResponse{
 			ID:       acc.ID,
 			Name:     acc.Name,
 			Currency: acc.Currency,
 			Balance:  acc.Balance,
-		}
+		})
 	}
 	c.JSON(http.StatusOK, responses)
 }
