@@ -48,6 +48,7 @@ func (h *TradeHandler) ListTrades(c *gin.Context) {
 			Currency:  trade.Currency,
 			AccountID: trade.AccountID,
 			Reason:    trade.Reason,
+			CreatedAt: trade.CreatedAt,
 		})
 	}
 

@@ -51,6 +51,7 @@ func (r *TradeRepository) ListTrades(userID string) ([]models.Trade, error) {
 			Currency:  gormTrade.Currency,
 			AccountID: gormTrade.AccountID,
 			Reason:    gormTrade.Reason,
+			CreatedAt: gormTrade.CreatedAt,
 		}
 		trades = append(trades, trade)
 	}
@@ -83,6 +84,7 @@ func (r *TradeRepository) CreateTrade(userID string, trade models.Trade) error {
 		Currency:  trade.Currency,
 		AccountID: trade.AccountID,
 		Reason:    trade.Reason,
+		CreatedAt: time.Now(),
 	}
 
 	result := r.db.Create(gormTrade)

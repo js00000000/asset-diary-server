@@ -17,6 +17,7 @@ type Trade struct {
 	AccountID string    `gorm:"type:uuid;not null;index" json:"accountId" db:"account_id"`
 	Account   Account   `gorm:"foreignKey:AccountID;references:ID;onUpdate:CASCADE" json:"account"`
 	Reason    *string   `gorm:"nullable" json:"reason,omitempty" db:"reason"`
+	CreatedAt time.Time `gorm:"not null;default:current_timestamp" json:"createdAt" db:"created_at"`
 }
 
 func (Trade) TableName() string {
@@ -60,4 +61,5 @@ type TradeResponse struct {
 	Currency  string    `json:"currency" db:"currency"` // e.g., USD, TWD
 	AccountID string    `json:"accountId" db:"account_id"`
 	Reason    *string   `json:"reason,omitempty" db:"reason"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 }
