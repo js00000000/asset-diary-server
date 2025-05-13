@@ -35,7 +35,7 @@ func (h *TradeHandler) ListTrades(c *gin.Context) {
 		return
 	}
 
-	var tradeResponses []models.TradeResponse
+	tradeResponses := []models.TradeResponse{}
 	for _, trade := range trades {
 		tradeResponses = append(tradeResponses, models.TradeResponse{
 			ID:        trade.ID,
