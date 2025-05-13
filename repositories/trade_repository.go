@@ -156,6 +156,7 @@ func (r *TradeRepository) UpdateTrade(userID, tradeID string, req models.TradeUp
 		Currency:  gormTrade.Currency,
 		AccountID: gormTrade.AccountID,
 		Reason:    gormTrade.Reason,
+		CreatedAt: gormTrade.CreatedAt,
 	}, nil
 }
 
