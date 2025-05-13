@@ -138,6 +138,9 @@ func (r *TradeRepository) UpdateTrade(userID, tradeID string, req models.TradeUp
 	if req.Reason != nil {
 		gormTrade.Reason = req.Reason
 	}
+	if req.AccountID != "" {
+		gormTrade.AccountID = req.AccountID
+	}
 
 	result = r.db.Save(&gormTrade)
 	if result.Error != nil {
