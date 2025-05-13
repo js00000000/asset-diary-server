@@ -19,8 +19,12 @@ func (m *MockTradeService) ListTrades(userID string) ([]models.Trade, error) {
 }
 
 // Add stub methods to satisfy TradeServiceInterface
-func (m *MockTradeService) CreateTrade(userID string, trade models.Trade) error {
-	panic("not implemented")
+func (m *MockTradeService) CreateTrade(userID string, trade models.Trade) (*models.Trade, error) {
+	args := m.Called(userID, trade)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Trade), args.Error(1)
 }
 func (m *MockTradeService) UpdateTrade(userID, tradeID string, req models.TradeUpdateRequest) (*models.Trade, error) {
 	panic("not implemented")

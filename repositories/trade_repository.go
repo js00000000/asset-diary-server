@@ -12,7 +12,7 @@ import (
 // TradeRepositoryInterface defines methods for trade-related database operations
 type TradeRepositoryInterface interface {
 	ListTrades(userID string) ([]models.Trade, error)
-	CreateTrade(userID string, trade models.Trade) error
+	CreateTrade(userID string, trade models.Trade) (*models.Trade, error)
 	UpdateTrade(userID, tradeID string, req models.TradeUpdateRequest) (*models.Trade, error)
 	DeleteTrade(userID, tradeID string) (bool, error)
 	IsAccountOwnedByUser(accountID, userID string) (bool, error)
@@ -71,7 +71,7 @@ func (r *TradeRepository) IsTradeOwnedByUser(tradeID, userID string) (bool, erro
 	return count > 0, result.Error
 }
 
-func (r *TradeRepository) CreateTrade(userID string, trade models.Trade) error {
+func (r *TradeRepository) CreateTrade(userID string, trade models.Trade) (*models.Trade, error) {
 	gormTrade := &models.Trade{
 		ID:        trade.ID,
 		UserID:    userID,
@@ -88,7 +88,17 @@ func (r *TradeRepository) CreateTrade(userID string, trade models.Trade) error {
 	}
 
 	result := r.db.Create(gormTrade)
-	return result.Error
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	// Fetch the created trade to get all fields populated by DB
+	var createdTrade models.Trade
+	if err := r.db.First(&createdTrade, "id = ?", gormTrade.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &createdTrade, nil
 }
 
 func (r *TradeRepository) UpdateTrade(userID, tradeID string, req models.TradeUpdateRequest) (*models.Trade, error) {

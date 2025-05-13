@@ -90,21 +90,23 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 		AccountID: req.AccountID,
 		Reason:    req.Reason,
 	}
-	if err := h.service.CreateTrade(userID.(string), trade); err != nil {
+	createdTrade, err := h.service.CreateTrade(userID.(string), trade)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create trade"})
 		return
 	}
 	tradeResponse := models.TradeResponse{
-		ID:        trade.ID,
-		Type:      trade.Type,
-		AssetType: trade.AssetType,
-		Ticker:    trade.Ticker,
-		TradeDate: trade.TradeDate,
-		Quantity:  trade.Quantity,
-		Price:     trade.Price,
-		Currency:  trade.Currency,
-		AccountID: trade.AccountID,
-		Reason:    trade.Reason,
+		ID:        createdTrade.ID,
+		Type:      createdTrade.Type,
+		AssetType: createdTrade.AssetType,
+		Ticker:    createdTrade.Ticker,
+		TradeDate: createdTrade.TradeDate,
+		Quantity:  createdTrade.Quantity,
+		Price:     createdTrade.Price,
+		Currency:  createdTrade.Currency,
+		AccountID: createdTrade.AccountID,
+		Reason:    createdTrade.Reason,
+		CreatedAt: createdTrade.CreatedAt,
 	}
 	c.JSON(http.StatusCreated, tradeResponse)
 }

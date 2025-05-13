@@ -7,7 +7,7 @@ import (
 
 type TradeServiceInterface interface {
 	ListTrades(userID string) ([]models.Trade, error)
-	CreateTrade(userID string, trade models.Trade) error
+	CreateTrade(userID string, trade models.Trade) (*models.Trade, error)
 	UpdateTrade(userID, tradeID string, req models.TradeUpdateRequest) (*models.Trade, error)
 	DeleteTrade(userID, tradeID string) (bool, error)
 	IsAccountOwnedByUser(accountID, userID string) (bool, error)
@@ -28,7 +28,7 @@ func (s *TradeService) ListTrades(userID string) ([]models.Trade, error) {
 	return s.repo.ListTrades(userID)
 }
 
-func (s *TradeService) CreateTrade(userID string, trade models.Trade) error {
+func (s *TradeService) CreateTrade(userID string, trade models.Trade) (*models.Trade, error) {
 	return s.repo.CreateTrade(userID, trade)
 }
 
