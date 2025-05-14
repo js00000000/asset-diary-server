@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"asset-dairy/models"
+	"asset-diary/models"
 
 	"gorm.io/gorm"
 )

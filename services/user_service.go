@@ -1,7 +1,7 @@
 package services
 
 import (
-	"asset-dairy/repositories"
+	"asset-diary/repositories"
 )
 
 type UserServiceInterface interface {

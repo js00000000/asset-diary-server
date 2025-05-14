@@ -20,7 +20,7 @@ func InitDB() *gorm.DB {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		log.Println("Warning: DATABASE_URL not set, falling back to default DSN")
-		dsn = "postgres://postgres:postgres@localhost:5432/asset_dairy?sslmode=disable"
+		dsn = "postgres://postgres:postgres@localhost:5432/asset_diary?sslmode=disable"
 	}
 
 	// Configure logger

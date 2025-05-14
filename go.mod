@@ -1,4 +1,4 @@
-module asset-dairy
+module asset-diary
 
 go 1.23.0
 

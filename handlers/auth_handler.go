@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"asset-dairy/models"
-	"asset-dairy/services"
+	"asset-diary/models"
+	"asset-diary/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

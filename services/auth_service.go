@@ -1,8 +1,8 @@
 package services
 
 import (
-	"asset-dairy/models"
-	"asset-dairy/repositories"
+	"asset-diary/models"
+	"asset-diary/repositories"
 	"bytes"
 	"crypto/tls"
 	"errors"
@@ -256,7 +256,7 @@ func sendPasswordResetEmail(email, newPassword string) error {
 Please change this password immediately after logging in.
 
 Best regards,
-Asset Dairy Team`))
+Asset Diary Team`))
 
 	err = templ.Execute(&body, struct {
 		Password string
@@ -270,7 +270,7 @@ Asset Dairy Team`))
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", from)
 	msg.SetHeader("To", email)
-	msg.SetHeader("Subject", "Asset Dairy Password Reset")
+	msg.SetHeader("Subject", "Asset Diary Password Reset")
 	msg.SetBody("text/plain", body.String())
 
 	dialer := gomail.NewDialer(smtpHost, port, smtpUser, smtpPass)
@@ -323,7 +323,7 @@ func sendVerificationEmail(email, code string) error {
 This code will expire in 3 minutes.
 
 Best regards,
-Asset Dairy Team`))
+Asset Diary Team`))
 
 	err = templ.Execute(&body, struct {
 		From string
@@ -341,7 +341,7 @@ Asset Dairy Team`))
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", from)
 	msg.SetHeader("To", email)
-	msg.SetHeader("Subject", "Asset Dairy Verification Code")
+	msg.SetHeader("Subject", "Asset Diary Verification Code")
 	msg.SetBody("text/plain", body.String())
 
 	dialer := gomail.NewDialer(smtpHost, port, smtpUser, smtpPass)

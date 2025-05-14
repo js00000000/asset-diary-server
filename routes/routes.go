@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"asset-dairy/handlers"
-	"asset-dairy/middleware"
+	"asset-diary/handlers"
+	"asset-diary/middleware"
 
 	"github.com/gin-gonic/gin"
 )

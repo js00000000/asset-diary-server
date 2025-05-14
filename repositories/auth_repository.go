@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"asset-dairy/models"
+	"asset-diary/models"
 
 	"gorm.io/gorm"
 )

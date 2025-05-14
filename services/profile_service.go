@@ -1,8 +1,8 @@
 package services
 
 import (
-	"asset-dairy/models"
-	"asset-dairy/repositories"
+	"asset-diary/models"
+	"asset-diary/repositories"
 )
 
 type ProfileServiceInterface interface {

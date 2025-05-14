@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: asset_dairy
+      POSTGRES_DB: asset_diary
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
     build: .
     command: go run main.go
     environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/asset_dairy?sslmode=disable
+      DATABASE_URL: postgres://postgres:postgres@db:5432/asset_diary?sslmode=disable
     ports:
       - "3000:3000"
     depends_on:

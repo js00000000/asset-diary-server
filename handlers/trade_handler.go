@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"asset-dairy/models"
-	"asset-dairy/services"
+	"asset-diary/models"
+	"asset-diary/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

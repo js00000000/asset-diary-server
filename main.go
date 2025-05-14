@@ -1,11 +1,11 @@
 package main
 
 import (
-	"asset-dairy/db"
-	"asset-dairy/handlers"
-	"asset-dairy/repositories"
-	"asset-dairy/routes"
-	"asset-dairy/services"
+	"asset-diary/db"
+	"asset-diary/handlers"
+	"asset-diary/repositories"
+	"asset-diary/routes"
+	"asset-diary/services"
 	"fmt"
 	"log"
 	"net/http"

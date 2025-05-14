@@ -1,7 +1,7 @@
 package services
 
 import (
-	"asset-dairy/models"
+	"asset-diary/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

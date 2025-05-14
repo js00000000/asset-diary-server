@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"asset-dairy/services"
+	"asset-diary/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

@@ -3,7 +3,7 @@ package repositories
 import (
 	"log"
 
-	"asset-dairy/models"
+	"asset-diary/models"
 
 	"gorm.io/gorm"
 )

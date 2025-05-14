@@ -1,4 +1,4 @@
-# Asset Dairy Go API
+# Asset Diary Go API
 
 This project is a Go-based RESTful API for managing assets, users, and related operations. It is designed to be modular, secure, and easy to deploy.
 
@@ -52,7 +52,7 @@ server/
 1. Clone the repository:
    ```bash
    git clone <repo-url>
-   cd asset-dairy/server
+   cd asset-diary/server
    ```
 2. Copy and configure environment variables:
    ```bash
