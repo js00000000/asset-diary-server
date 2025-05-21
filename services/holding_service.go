@@ -41,9 +41,10 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		asset, exists := assetMap[key]
 		if !exists {
 			asset = &models.Holding{
-				Ticker:    trade.Ticker,
-				AssetType: trade.AssetType,
-				Currency:  trade.Currency,
+				Ticker:     trade.Ticker,
+				TickerName: trade.TickerName,
+				AssetType:  trade.AssetType,
+				Currency:   trade.Currency,
 			}
 			assetMap[key] = asset
 			lotsMap[key] = []*Lot{}

@@ -9,7 +9,8 @@ type Trade struct {
 	User      User      `gorm:"foreignKey:UserID;references:ID;onUpdate:CASCADE;onDelete:CASCADE" json:"user"`
 	Type      string    `gorm:"not null" json:"type" db:"type"`            // buy or sell
 	AssetType string    `gorm:"not null" json:"assetType" db:"asset_type"` // stock or crypto
-	Ticker    string    `gorm:"not null" json:"ticker" db:"ticker"`
+	Ticker     string    `gorm:"not null" json:"ticker" db:"ticker"`
+	TickerName string    `gorm:"not null" json:"tickerName" db:"ticker_name"`
 	TradeDate time.Time `gorm:"not null" json:"tradeDate" db:"trade_date"`
 	Quantity  float64   `gorm:"not null" json:"quantity" db:"quantity"`
 	Price     float64   `gorm:"not null" json:"price" db:"price"`
@@ -29,7 +30,8 @@ func (Trade) TableName() string {
 type TradeCreateRequest struct {
 	Type      string  `json:"type" binding:"required,oneof=buy sell"`
 	AssetType string  `json:"assetType" binding:"required,oneof=stock crypto"`
-	Ticker    string  `json:"ticker" binding:"required"`
+	Ticker     string  `json:"ticker" binding:"required"`
+	TickerName string  `json:"tickerName" binding:"required"`
 	TradeDate string  `json:"tradeDate" binding:"required"`
 	Quantity  float64 `json:"quantity" binding:"required"`
 	Price     float64 `json:"price" binding:"required"`
@@ -41,7 +43,8 @@ type TradeCreateRequest struct {
 type TradeUpdateRequest struct {
 	Type      string  `json:"type" binding:"omitempty,oneof=buy sell"`
 	AssetType string  `json:"assetType" binding:"omitempty,oneof=stock crypto"`
-	Ticker    string  `json:"ticker" binding:"omitempty"`
+	Ticker     string  `json:"ticker" binding:"omitempty"`
+	TickerName string  `json:"tickerName" binding:"omitempty"`
 	TradeDate string  `json:"tradeDate" binding:"omitempty"`
 	Quantity  float64 `json:"quantity" binding:"omitempty"`
 	Price     float64 `json:"price" binding:"omitempty"`
@@ -54,7 +57,8 @@ type TradeResponse struct {
 	ID        string    `json:"id" db:"id"`
 	Type      string    `json:"type" db:"type"`            // buy or sell
 	AssetType string    `json:"assetType" db:"asset_type"` // stock or crypto
-	Ticker    string    `json:"ticker" db:"ticker"`
+	Ticker     string    `json:"ticker" db:"ticker"`
+	TickerName string    `json:"tickerName" db:"ticker_name"`
 	TradeDate time.Time `json:"tradeDate" db:"trade_date"`
 	Quantity  float64   `json:"quantity" db:"quantity"`
 	Price     float64   `json:"price" db:"price"`

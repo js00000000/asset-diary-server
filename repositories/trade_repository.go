@@ -41,17 +41,18 @@ func (r *TradeRepository) ListTrades(userID string) ([]models.Trade, error) {
 	trades := []models.Trade{}
 	for _, gormTrade := range gormTrades {
 		trade := models.Trade{
-			ID:        gormTrade.ID,
-			Type:      gormTrade.Type,
-			AssetType: gormTrade.AssetType,
-			Ticker:    gormTrade.Ticker,
-			TradeDate: gormTrade.TradeDate,
-			Quantity:  gormTrade.Quantity,
-			Price:     gormTrade.Price,
-			Currency:  gormTrade.Currency,
-			AccountID: gormTrade.AccountID,
-			Reason:    gormTrade.Reason,
-			CreatedAt: gormTrade.CreatedAt,
+			ID:         gormTrade.ID,
+			Type:       gormTrade.Type,
+			AssetType:  gormTrade.AssetType,
+			Ticker:     gormTrade.Ticker,
+			TickerName: gormTrade.TickerName,
+			TradeDate:  gormTrade.TradeDate,
+			Quantity:   gormTrade.Quantity,
+			Price:      gormTrade.Price,
+			Currency:   gormTrade.Currency,
+			AccountID:  gormTrade.AccountID,
+			Reason:     gormTrade.Reason,
+			CreatedAt:  gormTrade.CreatedAt,
 		}
 		trades = append(trades, trade)
 	}
@@ -73,18 +74,19 @@ func (r *TradeRepository) IsTradeOwnedByUser(tradeID, userID string) (bool, erro
 
 func (r *TradeRepository) CreateTrade(userID string, trade models.Trade) (*models.Trade, error) {
 	gormTrade := &models.Trade{
-		ID:        trade.ID,
-		UserID:    userID,
-		Type:      trade.Type,
-		AssetType: trade.AssetType,
-		Ticker:    trade.Ticker,
-		TradeDate: trade.TradeDate,
-		Quantity:  trade.Quantity,
-		Price:     trade.Price,
-		Currency:  trade.Currency,
-		AccountID: trade.AccountID,
-		Reason:    trade.Reason,
-		CreatedAt: time.Now(),
+		ID:         trade.ID,
+		UserID:     userID,
+		Type:       trade.Type,
+		AssetType:  trade.AssetType,
+		Ticker:     trade.Ticker,
+		TickerName: trade.TickerName,
+		TradeDate:  trade.TradeDate,
+		Quantity:   trade.Quantity,
+		Price:      trade.Price,
+		Currency:   trade.Currency,
+		AccountID:  trade.AccountID,
+		Reason:     trade.Reason,
+		CreatedAt:  time.Now(),
 	}
 
 	result := r.db.Create(gormTrade)
@@ -126,6 +128,9 @@ func (r *TradeRepository) UpdateTrade(userID, tradeID string, req models.TradeUp
 	if req.Ticker != "" {
 		gormTrade.Ticker = req.Ticker
 	}
+	if req.TickerName != "" {
+		gormTrade.TickerName = req.TickerName
+	}
 	if req.Quantity != 0 {
 		gormTrade.Quantity = req.Quantity
 	}
@@ -149,17 +154,18 @@ func (r *TradeRepository) UpdateTrade(userID, tradeID string, req models.TradeUp
 	}
 
 	return &models.Trade{
-		ID:        gormTrade.ID,
-		Type:      gormTrade.Type,
-		AssetType: gormTrade.AssetType,
-		Ticker:    gormTrade.Ticker,
-		TradeDate: gormTrade.TradeDate,
-		Quantity:  gormTrade.Quantity,
-		Price:     gormTrade.Price,
-		Currency:  gormTrade.Currency,
-		AccountID: gormTrade.AccountID,
-		Reason:    gormTrade.Reason,
-		CreatedAt: gormTrade.CreatedAt,
+		ID:         gormTrade.ID,
+		Type:       gormTrade.Type,
+		AssetType:  gormTrade.AssetType,
+		Ticker:     gormTrade.Ticker,
+		TickerName: gormTrade.TickerName,
+		TradeDate:  gormTrade.TradeDate,
+		Quantity:   gormTrade.Quantity,
+		Price:      gormTrade.Price,
+		Currency:   gormTrade.Currency,
+		AccountID:  gormTrade.AccountID,
+		Reason:     gormTrade.Reason,
+		CreatedAt:  gormTrade.CreatedAt,
 	}, nil
 }
 

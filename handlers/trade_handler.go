@@ -38,17 +38,18 @@ func (h *TradeHandler) ListTrades(c *gin.Context) {
 	tradeResponses := []models.TradeResponse{}
 	for _, trade := range trades {
 		tradeResponses = append(tradeResponses, models.TradeResponse{
-			ID:        trade.ID,
-			Type:      trade.Type,
-			AssetType: trade.AssetType,
-			Ticker:    trade.Ticker,
-			TradeDate: trade.TradeDate,
-			Quantity:  trade.Quantity,
-			Price:     trade.Price,
-			Currency:  trade.Currency,
-			AccountID: trade.AccountID,
-			Reason:    trade.Reason,
-			CreatedAt: trade.CreatedAt,
+			ID:         trade.ID,
+			Type:       trade.Type,
+			AssetType:  trade.AssetType,
+			Ticker:     trade.Ticker,
+			TickerName: trade.TickerName,
+			TradeDate:  trade.TradeDate,
+			Quantity:   trade.Quantity,
+			Price:      trade.Price,
+			Currency:   trade.Currency,
+			AccountID:  trade.AccountID,
+			Reason:     trade.Reason,
+			CreatedAt:  trade.CreatedAt,
 		})
 	}
 
@@ -79,16 +80,17 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 		return
 	}
 	trade := models.Trade{
-		ID:        uuid.New().String(),
-		Type:      req.Type,
-		AssetType: req.AssetType,
-		Ticker:    req.Ticker,
-		TradeDate: tradeDate,
-		Quantity:  req.Quantity,
-		Price:     req.Price,
-		Currency:  req.Currency,
-		AccountID: req.AccountID,
-		Reason:    req.Reason,
+		ID:         uuid.New().String(),
+		Type:       req.Type,
+		AssetType:  req.AssetType,
+		Ticker:     req.Ticker,
+		TickerName: req.TickerName,
+		TradeDate:  tradeDate,
+		Quantity:   req.Quantity,
+		Price:      req.Price,
+		Currency:   req.Currency,
+		AccountID:  req.AccountID,
+		Reason:     req.Reason,
 	}
 	createdTrade, err := h.service.CreateTrade(userID.(string), trade)
 	if err != nil {
@@ -96,17 +98,18 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 		return
 	}
 	tradeResponse := models.TradeResponse{
-		ID:        createdTrade.ID,
-		Type:      createdTrade.Type,
-		AssetType: createdTrade.AssetType,
-		Ticker:    createdTrade.Ticker,
-		TradeDate: createdTrade.TradeDate,
-		Quantity:  createdTrade.Quantity,
-		Price:     createdTrade.Price,
-		Currency:  createdTrade.Currency,
-		AccountID: createdTrade.AccountID,
-		Reason:    createdTrade.Reason,
-		CreatedAt: createdTrade.CreatedAt,
+		ID:         createdTrade.ID,
+		Type:       createdTrade.Type,
+		AssetType:  createdTrade.AssetType,
+		Ticker:     createdTrade.Ticker,
+		TickerName: createdTrade.TickerName,
+		TradeDate:  createdTrade.TradeDate,
+		Quantity:   createdTrade.Quantity,
+		Price:      createdTrade.Price,
+		Currency:   createdTrade.Currency,
+		AccountID:  createdTrade.AccountID,
+		Reason:     createdTrade.Reason,
+		CreatedAt:  createdTrade.CreatedAt,
 	}
 	c.JSON(http.StatusCreated, tradeResponse)
 }
@@ -147,17 +150,18 @@ func (h *TradeHandler) UpdateTrade(c *gin.Context) {
 		return
 	}
 	tradeResponse := models.TradeResponse{
-		ID:        updatedTrade.ID,
-		Type:      updatedTrade.Type,
-		AssetType: updatedTrade.AssetType,
-		Ticker:    updatedTrade.Ticker,
-		TradeDate: updatedTrade.TradeDate,
-		Quantity:  updatedTrade.Quantity,
-		Price:     updatedTrade.Price,
-		Currency:  updatedTrade.Currency,
-		AccountID: updatedTrade.AccountID,
-		Reason:    updatedTrade.Reason,
-		CreatedAt: updatedTrade.CreatedAt,
+		ID:         updatedTrade.ID,
+		Type:       updatedTrade.Type,
+		AssetType:  updatedTrade.AssetType,
+		Ticker:     updatedTrade.Ticker,
+		TickerName: updatedTrade.TickerName,
+		TradeDate:  updatedTrade.TradeDate,
+		Quantity:   updatedTrade.Quantity,
+		Price:      updatedTrade.Price,
+		Currency:   updatedTrade.Currency,
+		AccountID:  updatedTrade.AccountID,
+		Reason:     updatedTrade.Reason,
+		CreatedAt:  updatedTrade.CreatedAt,
 	}
 	c.JSON(http.StatusOK, tradeResponse)
 }
