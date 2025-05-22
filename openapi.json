@@ -776,9 +776,6 @@
       "RegisterRequest": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
           "username": {
             "type": "string"
           },
@@ -791,7 +788,6 @@
           }
         },
         "required": [
-          "name",
           "username",
           "email",
           "password"
@@ -842,9 +838,6 @@
       "UserUpdateRequest": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
-          },
           "avatar": {
             "type": "string",
             "nullable": true

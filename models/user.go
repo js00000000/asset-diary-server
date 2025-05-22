@@ -4,7 +4,6 @@ import "time"
 
 type User struct {
 	ID            string    `gorm:"primaryKey;type:uuid" db:"id" json:"id"`
-	Name          string    `gorm:"not null" db:"name" json:"name"`
 	Email         string    `gorm:"unique;not null" db:"email" json:"email"`
 	Username      string    `gorm:"unique;not null" db:"username" json:"username"`
 	Password_Hash string    `gorm:"not null" db:"password_hash" json:"-"`
@@ -17,7 +16,6 @@ func (User) TableName() string {
 
 type UserSignUpRequest struct {
 	Email    string `json:"email" binding:"required,email"`
-	Name     string `json:"name" binding:"required"`
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required,min=6"`
 }

@@ -4,7 +4,6 @@ package models
 // Add more fields as needed from openapi.json
 
 type UserUpdateRequest struct {
-	Name              string             `json:"name"`
 	Username          string             `json:"username"`
 	InvestmentProfile *InvestmentProfile `json:"investmentProfile,omitempty"`
 }

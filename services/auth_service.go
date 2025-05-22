@@ -49,7 +49,6 @@ func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthRespons
 	user := &models.User{
 		ID:        uuid.New().String(),
 		Email:     req.Email,
-		Name:      req.Name,
 		Username:  req.Username,
 		CreatedAt: time.Now(),
 	}

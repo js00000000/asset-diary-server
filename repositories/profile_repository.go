@@ -42,7 +42,6 @@ func (r *ProfileRepository) GetProfile(userID string) (*models.Profile, error) {
 	if result.Error == gorm.ErrRecordNotFound {
 		return &models.Profile{
 			Email:    user.Email,
-			Name:     user.Name,
 			Username: user.Username,
 		}, nil
 	}
@@ -54,7 +53,6 @@ func (r *ProfileRepository) GetProfile(userID string) (*models.Profile, error) {
 
 	return &models.Profile{
 		Email:    user.Email,
-		Name:     user.Name,
 		Username: user.Username,
 		InvestmentProfile: &models.InvestmentProfile{
 			Age:                                  int(investmentProfile.Age),
@@ -110,7 +108,6 @@ func (r *ProfileRepository) UpdateProfile(userID string, req *models.UserUpdateR
 	}
 
 	// Update fields
-	user.Name = req.Name
 	user.Username = req.Username
 
 	result = r.db.Save(&user)
@@ -161,7 +158,6 @@ func (r *ProfileRepository) UpdateProfile(userID string, req *models.UserUpdateR
 
 		return &models.Profile{
 			Email:    user.Email,
-			Name:     user.Name,
 			Username: user.Username,
 			InvestmentProfile: &models.InvestmentProfile{
 				Age:                                  int(existingProfile.Age),
@@ -177,7 +173,6 @@ func (r *ProfileRepository) UpdateProfile(userID string, req *models.UserUpdateR
 
 	return &models.Profile{
 		Email:    user.Email,
-		Name:     user.Name,
 		Username: user.Username,
 	}, nil
 }

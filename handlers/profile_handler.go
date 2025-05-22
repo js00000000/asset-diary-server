@@ -39,7 +39,6 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	if profile.InvestmentProfile != nil {
 		c.JSON(http.StatusOK, models.ProfileResponse{
 			Email:    profile.Email,
-			Name:     profile.Name,
 			Username: profile.Username,
 			InvestmentProfile: &models.InvestmentProfileResponse{
 				Age:                                  profile.InvestmentProfile.Age,
@@ -54,7 +53,6 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, models.ProfileResponse{
 			Email:    profile.Email,
-			Name:     profile.Name,
 			Username: profile.Username,
 		})
 	}
@@ -104,7 +102,6 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.ProfileResponse{
-		Name:     profile.Name,
 		Email:    profile.Email,
 		Username: profile.Username,
 		InvestmentProfile: &models.InvestmentProfileResponse{

@@ -1,0 +1,3 @@
+-- +migrate Up
+ALTER TABLE users 
+DROP COLUMN IF EXISTS name;
