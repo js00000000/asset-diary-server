@@ -14,7 +14,7 @@ import (
 
 type AssetPriceServiceInterface interface {
 	GetStockPrice(symbol string) (*TickerInfo, error)
-	GetCryptoPrice(baseCurrency string) (*TickerInfo, error)
+	GetCryptoPrice(symbol string) (*TickerInfo, error)
 }
 
 type AssetPriceService struct {
@@ -56,14 +56,11 @@ func (s *AssetPriceService) GetStockPrice(symbol string) (*TickerInfo, error) {
 }
 
 // GetCryptoPrice gets the price of a cryptocurrency in USDT
-func (s *AssetPriceService) GetCryptoPrice(baseCurrency string) (*TickerInfo, error) {
-	if baseCurrency == "" {
-		return nil, fmt.Errorf("base currency is required")
+func (s *AssetPriceService) GetCryptoPrice(symbol string) (*TickerInfo, error) {
+	if symbol == "" {
+		return nil, fmt.Errorf("symbol is required")
 	}
 
-	// Always use USDT as the quote currency
-	quoteCurrency := "USDT"
-	symbol := fmt.Sprintf("%s%s", baseCurrency, quoteCurrency)
 	return s.getCryptoPrice(symbol)
 }
 
@@ -113,9 +110,7 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, err
 }
 
 func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
-	// Convert symbol to Binance format (e.g., BTC-USDT -> BTCUSDT)
-	pair := strings.ReplaceAll(symbol, "-", "")
-	url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/price?symbol=%s", pair)
+	url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/price?symbol=%sUSDT", symbol)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -146,13 +141,10 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
 		return nil, fmt.Errorf("invalid price format: %v", err)
 	}
 
-	// Extract base currency (e.g., BTC from BTC-USDT)
-	baseCurrency := strings.Split(symbol, "-")[0]
-
 	return &TickerInfo{
 		Price:       price,
-		Ticker:      baseCurrency,
-		Name:        baseCurrency,
+		Ticker:      symbol,
+		Name:        symbol,
 		Currency:    "USDT",
 		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil

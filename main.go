@@ -102,7 +102,10 @@ func main() {
 	tradeService := services.NewTradeService(tradeRepo)
 	holdingService := services.NewHoldingService(tradeService)
 	userService := services.NewUserService(userRepo)
+
+	// Create base service and wrap it with caching decorator
 	assetPriceService := services.NewAssetPriceService()
+	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -110,7 +113,7 @@ func main() {
 	accountHandler := handlers.NewAccountHandler(accountService)
 	tradeHandler := handlers.NewTradeHandler(tradeService)
 	holdingHandler := handlers.NewHoldingHandler(holdingService)
-	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceService)
+	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
 	routes.SetupRoutes(r, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler)
 
 	r.GET("/swagger/*any", ginSwaggerHandler()) // Swagger UI placeholder
