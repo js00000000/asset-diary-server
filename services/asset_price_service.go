@@ -110,7 +110,7 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, err
 }
 
 func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
-	url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/price?symbol=%sUSDT", symbol)
+	url := fmt.Sprintf("https://data-api.binance.vision/api/v3/ticker/price?symbol=%sUSDT", symbol)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
