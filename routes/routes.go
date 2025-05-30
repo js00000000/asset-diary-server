@@ -13,6 +13,7 @@ func SetupRoutes(r *gin.Engine,
 	accountHandler *handlers.AccountHandler,
 	tradeHandler *handlers.TradeHandler,
 	holdingHandler *handlers.HoldingHandler,
+	assetPriceHandler *handlers.AssetPriceHandler,
 ) {
 	// Public routes
 	public := r.Group("/auth")
@@ -59,5 +60,10 @@ func SetupRoutes(r *gin.Engine,
 
 		// Asset routes
 		protected.GET("/holdings", holdingHandler.ListHoldings)
+
+		// Stock price routes
+		protected.GET("/stock/price/:symbol", assetPriceHandler.GetStockPrice) // For stocks (e.g., AAPL, 2330)
+		// Crypto price routes
+		protected.GET("/crypto/price/:symbol", assetPriceHandler.GetCryptoPrice) // For cryptocurrencies (e.g., BTC, ETH)
 	}
 }
