@@ -1238,7 +1238,7 @@
             "format": "float",
             "example": 123.45
           },
-          "ticker": {
+          "symbol": {
             "type": "string",
             "example": "AAPL"
           },
@@ -1255,7 +1255,7 @@
             "format": "date-time"
           }
         },
-        "required": ["price", "ticker"]
+        "required": ["price", "symbol"]
       },
       "Holding": {
         "type": "object",
