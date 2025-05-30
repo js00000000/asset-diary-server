@@ -12,6 +12,86 @@
     }
   ],
   "paths": {
+    "/stock/price/{symbol}": {
+      "get": {
+        "summary": "Get stock price",
+        "description": "Get current price for a stock or Taiwan stock code",
+        "tags": ["Market Data"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "description": "Stock symbol or Taiwan stock code (e.g., AAPL, 2330)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TickerInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid symbol"
+          },
+          "404": {
+            "description": "Stock not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/crypto/price/{symbol}": {
+      "get": {
+        "summary": "Get cryptocurrency price",
+        "description": "Get current price for a cryptocurrency in USDT",
+        "tags": ["Market Data"],
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "description": "Cryptocurrency symbol (e.g., BTC, ETH)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TickerInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid symbol"
+          },
+          "404": {
+            "description": "Cryptocurrency not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/auth/forgot-password": {
       "post": {
         "summary": "Initiate Password Reset",
@@ -1149,6 +1229,33 @@
             "type": "number"
           }
         }
+      },
+      "TickerInfo": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "number",
+            "format": "float",
+            "example": 123.45
+          },
+          "ticker": {
+            "type": "string",
+            "example": "AAPL"
+          },
+          "name": {
+            "type": "string",
+            "example": "Apple Inc."
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["price", "ticker"]
       },
       "Holding": {
         "type": "object",

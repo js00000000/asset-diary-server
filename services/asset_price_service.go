@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type AssetPriceServiceInterface interface {
@@ -35,9 +36,11 @@ type TaiwanStockResponse struct {
 }
 
 type TickerInfo struct {
-	Price  float64 `json:"price"`
-	Ticker string  `json:"ticker"`
-	Name   string  `json:"name"`
+	Price       float64 `json:"price"`
+	Ticker      string  `json:"ticker"`
+	Name        string  `json:"name"`
+	Currency    string  `json:"currency"`
+	LastUpdated string  `json:"lastUpdated"`
 }
 
 func (s *AssetPriceService) GetStockPrice(symbol string) (*TickerInfo, error) {
@@ -101,9 +104,11 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, err
 	}
 
 	return &TickerInfo{
-		Price:  price,
-		Ticker: symbol,
-		Name:   stockInfo.N,
+		Price:       price,
+		Ticker:      symbol,
+		Name:        stockInfo.N,
+		Currency:    "TWD",
+		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -145,9 +150,11 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
 	baseCurrency := strings.Split(symbol, "-")[0]
 
 	return &TickerInfo{
-		Price:  price,
-		Ticker: baseCurrency,
-		Name:   baseCurrency,
+		Price:       price,
+		Ticker:      baseCurrency,
+		Name:        baseCurrency,
+		Currency:    "USDT",
+		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -196,8 +203,10 @@ func (s *AssetPriceService) getUSStockPrice(symbol string) (*TickerInfo, error) 
 	}
 
 	return &TickerInfo{
-		Price:  quote.Price,
-		Ticker: quote.Symbol,
-		Name:   quote.Name,
+		Price:       quote.Price,
+		Ticker:      quote.Symbol,
+		Name:        quote.Name,
+		Currency:    "USD",
+		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
 }
