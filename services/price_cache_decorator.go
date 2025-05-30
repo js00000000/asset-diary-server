@@ -1,29 +1,25 @@
 package services
 
 import (
+	"asset-diary/models"
+	"asset-diary/repositories"
+	"fmt"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 )
 
-type cachedTickerInfo struct {
-	info      *TickerInfo
-	expiresAt time.Time
-}
-
 type priceServiceCacheDecorator struct {
-	service  AssetPriceServiceInterface
-	cache    map[string]cachedTickerInfo
-	cacheTTL time.Duration
-	mu       sync.RWMutex
+	service   AssetPriceServiceInterface
+	cacheRepo repositories.PriceCacheRepositoryInterface
+	cacheTTL  time.Duration
 }
 
 // NewPriceServiceCacheDecorator creates a new caching decorator for AssetPriceService
-func NewPriceServiceCacheDecorator(service AssetPriceServiceInterface) *priceServiceCacheDecorator {
+func NewPriceServiceCacheDecorator(service AssetPriceServiceInterface, cacheRepo repositories.PriceCacheRepositoryInterface) *priceServiceCacheDecorator {
 	// Default cache TTL of 20 minutes
 	cacheTTL := 20 * time.Minute
-	
+
 	// Try to get TTL from environment
 	envTTL := os.Getenv("PRICE_CACHE_TTL_MINUTES")
 	if envTTL != "" {
@@ -32,38 +28,56 @@ func NewPriceServiceCacheDecorator(service AssetPriceServiceInterface) *priceSer
 		}
 	}
 
+	// Start a background goroutine to clean up expired cache entries
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			_ = cacheRepo.DeleteExpired()
+		}
+	}()
+
 	return &priceServiceCacheDecorator{
-		service:  service,
-		cache:    make(map[string]cachedTickerInfo),
-		cacheTTL: cacheTTL,
+		service:   service,
+		cacheRepo: cacheRepo,
+		cacheTTL:  cacheTTL,
 	}
 }
 
 func (d *priceServiceCacheDecorator) getFromCache(key string) (*TickerInfo, bool) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	cached, exists := d.cache[key]
-	if !exists {
+	cached, err := d.cacheRepo.Get(key)
+	if err != nil || cached == nil {
 		return nil, false
 	}
 
-	if time.Now().After(cached.expiresAt) {
+	if time.Now().After(cached.ExpiresAt) {
 		// Cache expired
 		return nil, false
 	}
 
-	return cached.info, true
+	return &TickerInfo{
+		Symbol:   cached.Symbol,
+		Name:     cached.Name,
+		Price:    cached.Price,
+		Currency: cached.Currency,
+	}, true
 }
 
-func (d *priceServiceCacheDecorator) setInCache(key string, info *TickerInfo) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (d *priceServiceCacheDecorator) setInCache(key string, info *TickerInfo) error {
+	expiresAt := time.Now().Add(d.cacheTTL)
+	fmt.Println("Setting cache for key:", key)
 
-	d.cache[key] = cachedTickerInfo{
-		info:      info,
-		expiresAt: time.Now().Add(d.cacheTTL),
+	cache := &models.PriceCache{
+		CacheKey:  key,
+		Symbol:    info.Symbol,
+		Name:      info.Name,
+		Price:     info.Price,
+		Currency:  info.Currency,
+		ExpiresAt: expiresAt,
 	}
+
+	return d.cacheRepo.Set(cache)
 }
 
 func (d *priceServiceCacheDecorator) GetStockPrice(symbol string) (*TickerInfo, error) {
@@ -77,7 +91,7 @@ func (d *priceServiceCacheDecorator) GetStockPrice(symbol string) (*TickerInfo, 
 		return nil, err
 	}
 
-	d.setInCache(cacheKey, info)
+	_ = d.setInCache(cacheKey, info)
 	return info, nil
 }
 
@@ -92,6 +106,6 @@ func (d *priceServiceCacheDecorator) GetCryptoPrice(symbol string) (*TickerInfo,
 		return nil, err
 	}
 
-	d.setInCache(cacheKey, info)
+	_ = d.setInCache(cacheKey, info)
 	return info, nil
 }

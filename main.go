@@ -94,6 +94,7 @@ func main() {
 	accountRepo := repositories.NewAccountRepository(dbConn)
 	authRepo := repositories.NewAuthRepository(dbConn)
 	userRepo := repositories.NewUserRepository(dbConn)
+	priceCacheRepo := repositories.NewPriceCacheRepository(dbConn)
 
 	// Initialize services
 	authService := services.NewAuthService(authRepo)
@@ -105,7 +106,7 @@ func main() {
 
 	// Create base service and wrap it with caching decorator
 	assetPriceService := services.NewAssetPriceService()
-	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService)
+	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService, priceCacheRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)

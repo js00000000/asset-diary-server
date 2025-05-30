@@ -37,7 +37,7 @@ type TaiwanStockResponse struct {
 
 type TickerInfo struct {
 	Price       float64 `json:"price"`
-	Ticker      string  `json:"ticker"`
+	Symbol      string  `json:"symbol"`
 	Name        string  `json:"name"`
 	Currency    string  `json:"currency"`
 	LastUpdated string  `json:"lastUpdated"`
@@ -102,7 +102,7 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, err
 
 	return &TickerInfo{
 		Price:       price,
-		Ticker:      symbol,
+		Symbol:      stockInfo.C,
 		Name:        stockInfo.N,
 		Currency:    "TWD",
 		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
@@ -143,7 +143,7 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
 
 	return &TickerInfo{
 		Price:       price,
-		Ticker:      symbol,
+		Symbol:      symbol,
 		Name:        symbol,
 		Currency:    "USDT",
 		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
@@ -151,8 +151,7 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
 }
 
 func (s *AssetPriceService) getUSStockPrice(symbol string) (*TickerInfo, error) {
-	// Using Financial Modeling Prep API
-	apiKey := os.Getenv("FMP_API_KEY") // In production, this should be in environment variables
+	apiKey := os.Getenv("FMP_API_KEY")
 	url := fmt.Sprintf("https://financialmodelingprep.com/api/v3/quote/%s?apikey=%s", symbol, apiKey)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -196,7 +195,7 @@ func (s *AssetPriceService) getUSStockPrice(symbol string) (*TickerInfo, error) 
 
 	return &TickerInfo{
 		Price:       quote.Price,
-		Ticker:      quote.Symbol,
+		Symbol:      quote.Symbol,
 		Name:        quote.Name,
 		Currency:    "USD",
 		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
