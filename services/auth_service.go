@@ -117,10 +117,21 @@ func generateAccessToken(userID string, email string) (string, error) {
 	if secret == "" {
 		return "", errors.New("JWT secret not set in environment")
 	}
+	
+	// Default to 1 hour if not set
+	tokenExpiry := 1 * time.Hour
+	tokenExpiryStr := os.Getenv("ACCESS_TOKEN_EXPIRY")
+	if tokenExpiryStr != "" {
+		duration, err := time.ParseDuration(tokenExpiryStr)
+		if err == nil {
+			tokenExpiry = duration
+		}
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
-		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+		"exp":     time.Now().Add(tokenExpiry).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
@@ -131,10 +142,21 @@ func generateRefreshToken(userID string, email string) (string, error) {
 	if secret == "" {
 		return "", errors.New("JWT refresh secret not set in environment")
 	}
+
+	// Default to 7 days if not set
+	refreshExpiry := 168 * time.Hour // 7 days
+	refreshExpiryStr := os.Getenv("REFRESH_TOKEN_EXPIRY")
+	if refreshExpiryStr != "" {
+		duration, err := time.ParseDuration(refreshExpiryStr)
+		if err == nil {
+			refreshExpiry = duration
+		}
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
-		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"exp":     time.Now().Add(refreshExpiry).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))

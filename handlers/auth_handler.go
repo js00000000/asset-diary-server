@@ -4,9 +4,27 @@ import (
 	"asset-diary/models"
 	"asset-diary/services"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+func getRefreshTokenExpirySeconds() int {
+	// Default to 7 days (in seconds) if not set
+	defaultExpiry := 7 * 24 * 3600
+	expiryStr := os.Getenv("REFRESH_TOKEN_EXPIRY")
+	if expiryStr == "" {
+		return defaultExpiry
+	}
+
+	duration, err := time.ParseDuration(expiryStr)
+	if err != nil {
+		return defaultExpiry
+	}
+
+	return int(duration.Seconds())
+}
 
 type AuthHandler struct {
 	authService services.AuthServiceInterface
@@ -31,8 +49,7 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	// Set refresh token as HttpOnly cookie
-	c.SetCookie("refresh_token", response.RefreshToken, 7*24*3600, "/", "", false, true)
+	h.setRefreshTokenCookie(c, response.RefreshToken)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"token": response.Token,
@@ -53,8 +70,7 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 		return
 	}
 
-	// Set refresh token as HttpOnly cookie
-	c.SetCookie("refresh_token", response.RefreshToken, 7*24*3600, "/", "", false, true)
+	h.setRefreshTokenCookie(c, response.RefreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": response.Token,
@@ -69,7 +85,6 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Call service to validate and generate new tokens
 	accessToken, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		if err == services.ErrInvalidToken {
@@ -80,11 +95,14 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Set new refresh token in cookie
-	c.SetCookie("refresh_token", newRefreshToken, 7*24*3600, "/", "", false, true)
+	h.setRefreshTokenCookie(c, newRefreshToken)
 
-	// Return new access token
 	c.JSON(http.StatusOK, gin.H{"token": accessToken})
+}
+
+func (h *AuthHandler) setRefreshTokenCookie(c *gin.Context, newRefreshToken string) {
+	cookieMaxAge := getRefreshTokenExpirySeconds()
+	c.SetCookie("refresh_token", newRefreshToken, cookieMaxAge, "/", "", false, true)
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
