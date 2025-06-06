@@ -102,11 +102,11 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 func (h *AuthHandler) setRefreshTokenCookie(c *gin.Context, newRefreshToken string) {
 	cookieMaxAge := getRefreshTokenExpirySeconds()
-	c.SetCookie("refresh_token", newRefreshToken, cookieMaxAge, "/", "", false, true)
+	c.SetCookie("refresh_token", newRefreshToken, cookieMaxAge, "/", "", true, true)
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
-	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	c.SetCookie("refresh_token", "", -1, "/", "", true, true)
 	c.Status(http.StatusNoContent)
 }
 
