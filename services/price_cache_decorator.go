@@ -4,7 +4,7 @@ import (
 	"asset-diary/models"
 	"asset-diary/repositories"
 	"asset-diary/services/interfaces"
-	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -57,6 +57,7 @@ func (d *priceServiceCacheDecorator) getFromCache(key string) (*models.TickerInf
 		return nil, false
 	}
 
+	log.Println("Using cache for key:", key)
 	return &models.TickerInfo{
 		Price:       cached.Price,
 		Symbol:      cached.Symbol,
@@ -68,7 +69,7 @@ func (d *priceServiceCacheDecorator) getFromCache(key string) (*models.TickerInf
 
 func (d *priceServiceCacheDecorator) setInCache(key string, info *models.TickerInfo) error {
 	expiresAt := time.Now().Add(d.cacheTTL)
-	fmt.Println("Setting cache for key:", key)
+	log.Println("Setting cache for key:", key)
 
 	cache := &models.PriceCache{
 		CacheKey:  key,

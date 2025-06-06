@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -68,7 +69,7 @@ func (s *GeminiChatService) GenerateContent(message string) (string, error) {
 		panic("no valid response from the model")
 	}
 
-	fmt.Println(resp.Text())
+	log.Println(resp.Text())
 	return resp.Text(), nil
 }
 
