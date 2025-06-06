@@ -61,14 +61,13 @@ func main() {
 	}
 	log.Println("Database migrated successfully")
 
-	r := gin.Default()
+	app := gin.New()
 
-	// Configure trusted proxies based on environment
 	if env == "production" {
 		// In production, trust X-Forwarded-* headers from Netlify
-		err = r.SetTrustedProxies([]string{
-			"127.0.0.1",     // Localhost
-			"::1",           // IPv6 localhost
+		err = app.SetTrustedProxies([]string{
+			"127.0.0.1", // Localhost
+			"::1",       // IPv6 localhost
 			// Netlify serverless functions IP ranges
 			"34.138.0.0/15", // Netlify serverless functions
 			"34.149.0.0/16", // Netlify serverless functions
@@ -76,7 +75,7 @@ func main() {
 		})
 	} else {
 		// In local development, only trust localhost
-		err = r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+		err = app.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 	}
 
 	if err != nil {
@@ -85,8 +84,10 @@ func main() {
 		log.Printf("[%s] Proxy configuration applied", env)
 	}
 
-	// CORS middleware for frontend on port 5173
-	r.Use(func(c *gin.Context) {
+	// Middleware
+	app.Use(gin.Logger())
+	app.Use(gin.Recovery())
+	app.Use(func(c *gin.Context) {
 		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 		originList := strings.Split(allowedOrigins, ",")
 		requestOrigin := c.Request.Header.Get("Origin")
@@ -140,11 +141,11 @@ func main() {
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
 	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
 
-	routes.SetupRoutes(&r.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler)
+	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler)
 
-	r.GET("/swagger/*any", ginSwaggerHandler())
+	app.GET("/swagger/*any", ginSwaggerHandler())
 
-	r.Run(":3000")
+	app.Run(":3000")
 }
 
 // ginSwaggerHandler is a placeholder for Swagger docs
