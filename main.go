@@ -108,6 +108,10 @@ func main() {
 	assetPriceService := services.NewAssetPriceService()
 	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService, priceCacheRepo)
 
+	// Initialize Gemini services
+	geminiChatService := services.NewGeminiChatService()
+	geminiAssetPriceService := services.NewGeminiAssetPriceService(geminiChatService)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
@@ -115,9 +119,11 @@ func main() {
 	tradeHandler := handlers.NewTradeHandler(tradeService)
 	holdingHandler := handlers.NewHoldingHandler(holdingService)
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
-	routes.SetupRoutes(r, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler)
+	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
 
-	r.GET("/swagger/*any", ginSwaggerHandler()) // Swagger UI placeholder
+	routes.SetupRoutes(&r.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler)
+
+	r.GET("/swagger/*any", ginSwaggerHandler())
 
 	r.Run(":3000")
 }

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"asset-diary/services"
+	"asset-diary/services/interfaces"
 	"net/http"
 	"strings"
 
@@ -10,11 +10,11 @@ import (
 
 // AssetPriceHandler handles requests related to asset prices (stocks and cryptocurrencies)
 type AssetPriceHandler struct {
-	assetPriceService services.AssetPriceServiceInterface
+	assetPriceService interfaces.AssetPriceServiceInterface
 }
 
 // NewAssetPriceHandler creates a new instance of AssetPriceHandler
-func NewAssetPriceHandler(assetPriceService services.AssetPriceServiceInterface) *AssetPriceHandler {
+func NewAssetPriceHandler(assetPriceService interfaces.AssetPriceServiceInterface) *AssetPriceHandler {
 	return &AssetPriceHandler{
 		assetPriceService: assetPriceService,
 	}

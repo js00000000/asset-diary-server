@@ -7,16 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine,
+func SetupRoutes(router *gin.RouterGroup,
 	authHandler *handlers.AuthHandler,
 	profileHandler *handlers.ProfileHandler,
 	accountHandler *handlers.AccountHandler,
 	tradeHandler *handlers.TradeHandler,
 	holdingHandler *handlers.HoldingHandler,
 	assetPriceHandler *handlers.AssetPriceHandler,
+	geminiTestHandler *handlers.GeminiTestHandler,
 ) {
-	// Public routes
-	public := r.Group("/auth")
+	public := router.Group("/auth")
 	{
 		public.POST("/sign-in", authHandler.SignIn)
 		public.POST("/sign-up", authHandler.SignUp)
@@ -25,8 +25,9 @@ func SetupRoutes(r *gin.Engine,
 		public.POST("/verify-reset-code", authHandler.VerifyResetCode)
 	}
 
-	// Protected routes
-	protected := r.Group("/")
+	geminiTestHandler.RegisterRoutes(router.Group(""))
+
+	protected := router.Group("/")
 	protected.Use(middleware.JWTAuthMiddleware())
 	{
 		auth := protected.Group("/auth")
@@ -58,12 +59,8 @@ func SetupRoutes(r *gin.Engine,
 			trades.DELETE("/:id", tradeHandler.DeleteTrade)
 		}
 
-		// Asset routes
 		protected.GET("/holdings", holdingHandler.ListHoldings)
-
-		// Stock price routes
-		protected.GET("/stock/price/:symbol", assetPriceHandler.GetStockPrice) // For stocks (e.g., AAPL, 2330)
-		// Crypto price routes
-		protected.GET("/crypto/price/:symbol", assetPriceHandler.GetCryptoPrice) // For cryptocurrencies (e.g., BTC, ETH)
+		protected.GET("/stock/price/:symbol", assetPriceHandler.GetStockPrice)
+		protected.GET("/crypto/price/:symbol", assetPriceHandler.GetCryptoPrice)
 	}
 }

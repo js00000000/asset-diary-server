@@ -3,6 +3,7 @@ package services
 import (
 	"asset-diary/models"
 	"asset-diary/repositories"
+	"asset-diary/services/interfaces"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,13 +11,13 @@ import (
 )
 
 type priceServiceCacheDecorator struct {
-	service   AssetPriceServiceInterface
+	service   interfaces.AssetPriceServiceInterface
 	cacheRepo repositories.PriceCacheRepositoryInterface
 	cacheTTL  time.Duration
 }
 
 // NewPriceServiceCacheDecorator creates a new caching decorator for AssetPriceService
-func NewPriceServiceCacheDecorator(service AssetPriceServiceInterface, cacheRepo repositories.PriceCacheRepositoryInterface) *priceServiceCacheDecorator {
+func NewPriceServiceCacheDecorator(service interfaces.AssetPriceServiceInterface, cacheRepo repositories.PriceCacheRepositoryInterface) *priceServiceCacheDecorator {
 	// Default cache TTL of 20 minutes
 	cacheTTL := 20 * time.Minute
 
@@ -45,7 +46,7 @@ func NewPriceServiceCacheDecorator(service AssetPriceServiceInterface, cacheRepo
 	}
 }
 
-func (d *priceServiceCacheDecorator) getFromCache(key string) (*TickerInfo, bool) {
+func (d *priceServiceCacheDecorator) getFromCache(key string) (*models.TickerInfo, bool) {
 	cached, err := d.cacheRepo.Get(key)
 	if err != nil || cached == nil {
 		return nil, false
@@ -56,15 +57,16 @@ func (d *priceServiceCacheDecorator) getFromCache(key string) (*TickerInfo, bool
 		return nil, false
 	}
 
-	return &TickerInfo{
-		Symbol:   cached.Symbol,
-		Name:     cached.Name,
-		Price:    cached.Price,
-		Currency: cached.Currency,
+	return &models.TickerInfo{
+		Price:       cached.Price,
+		Symbol:      cached.Symbol,
+		Name:        cached.Name,
+		Currency:    cached.Currency,
+		LastUpdated: cached.UpdatedAt.Format(time.RFC3339),
 	}, true
 }
 
-func (d *priceServiceCacheDecorator) setInCache(key string, info *TickerInfo) error {
+func (d *priceServiceCacheDecorator) setInCache(key string, info *models.TickerInfo) error {
 	expiresAt := time.Now().Add(d.cacheTTL)
 	fmt.Println("Setting cache for key:", key)
 
@@ -80,7 +82,7 @@ func (d *priceServiceCacheDecorator) setInCache(key string, info *TickerInfo) er
 	return d.cacheRepo.Set(cache)
 }
 
-func (d *priceServiceCacheDecorator) GetStockPrice(symbol string) (*TickerInfo, error) {
+func (d *priceServiceCacheDecorator) GetStockPrice(symbol string) (*models.TickerInfo, error) {
 	cacheKey := "stock_" + symbol
 	if cached, found := d.getFromCache(cacheKey); found {
 		return cached, nil
@@ -95,7 +97,7 @@ func (d *priceServiceCacheDecorator) GetStockPrice(symbol string) (*TickerInfo, 
 	return info, nil
 }
 
-func (d *priceServiceCacheDecorator) GetCryptoPrice(symbol string) (*TickerInfo, error) {
+func (d *priceServiceCacheDecorator) GetCryptoPrice(symbol string) (*models.TickerInfo, error) {
 	cacheKey := "crypto_" + symbol
 	if cached, found := d.getFromCache(cacheKey); found {
 		return cached, nil

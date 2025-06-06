@@ -10,13 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"asset-diary/models"
 )
 
-type AssetPriceServiceInterface interface {
-	GetStockPrice(symbol string) (*TickerInfo, error)
-	GetCryptoPrice(symbol string) (*TickerInfo, error)
-}
-
+// AssetPriceService is the default implementation of interfaces.AssetPriceServiceInterface
 type AssetPriceService struct {
 	httpClient *http.Client
 }
@@ -35,28 +33,17 @@ type TaiwanStockResponse struct {
 	} `json:"msgArray"`
 }
 
-type TickerInfo struct {
-	Price       float64 `json:"price"`
-	Symbol      string  `json:"symbol"`
-	Name        string  `json:"name"`
-	Currency    string  `json:"currency"`
-	LastUpdated string  `json:"lastUpdated"`
-}
-
-func (s *AssetPriceService) GetStockPrice(symbol string) (*TickerInfo, error) {
+func (s *AssetPriceService) GetStockPrice(symbol string) (*models.TickerInfo, error) {
 	symbol = strings.ToUpper(strings.TrimSpace(symbol))
 
-	// Check if it's a Taiwan stock (starts with a number)
 	if matched, _ := regexp.MatchString(`^\d`, symbol); matched {
 		return s.getTaiwanStockPrice(symbol)
 	}
-
-	// Otherwise, treat as US stock
 	return s.getUSStockPrice(symbol)
 }
 
 // GetCryptoPrice gets the price of a cryptocurrency in USDT
-func (s *AssetPriceService) GetCryptoPrice(symbol string) (*TickerInfo, error) {
+func (s *AssetPriceService) GetCryptoPrice(symbol string) (*models.TickerInfo, error) {
 	if symbol == "" {
 		return nil, fmt.Errorf("symbol is required")
 	}
@@ -64,7 +51,7 @@ func (s *AssetPriceService) GetCryptoPrice(symbol string) (*TickerInfo, error) {
 	return s.getCryptoPrice(symbol)
 }
 
-func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, error) {
+func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*models.TickerInfo, error) {
 	targetUrl := fmt.Sprintf("https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_%s.tw&_=CURRENT_TIME", symbol)
 	proxyUrl := fmt.Sprintf("https://api.allorigins.win/raw?url=%s", targetUrl)
 
@@ -100,16 +87,16 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*TickerInfo, err
 		return nil, fmt.Errorf("invalid price for symbol: %s", symbol)
 	}
 
-	return &TickerInfo{
+	return &models.TickerInfo{
 		Price:       price,
-		Symbol:      stockInfo.C,
+		Symbol:      symbol,
 		Name:        stockInfo.N,
 		Currency:    "TWD",
-		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
+		LastUpdated: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
-func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
+func (s *AssetPriceService) getCryptoPrice(symbol string) (*models.TickerInfo, error) {
 	url := fmt.Sprintf("https://data-api.binance.vision/api/v3/ticker/price?symbol=%sUSDT", symbol)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -141,16 +128,16 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*TickerInfo, error) {
 		return nil, fmt.Errorf("invalid price format: %v", err)
 	}
 
-	return &TickerInfo{
+	return &models.TickerInfo{
 		Price:       price,
 		Symbol:      symbol,
 		Name:        symbol,
 		Currency:    "USDT",
-		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
+		LastUpdated: time.Now().Format(time.RFC3339),
 	}, nil
 }
 
-func (s *AssetPriceService) getUSStockPrice(symbol string) (*TickerInfo, error) {
+func (s *AssetPriceService) getUSStockPrice(symbol string) (*models.TickerInfo, error) {
 	apiKey := os.Getenv("FMP_API_KEY")
 	url := fmt.Sprintf("https://financialmodelingprep.com/api/v3/quote/%s?apikey=%s", symbol, apiKey)
 
@@ -193,11 +180,11 @@ func (s *AssetPriceService) getUSStockPrice(symbol string) (*TickerInfo, error) 
 		return nil, fmt.Errorf("invalid price for symbol: %s", symbol)
 	}
 
-	return &TickerInfo{
+	return &models.TickerInfo{
 		Price:       quote.Price,
 		Symbol:      quote.Symbol,
 		Name:        quote.Name,
 		Currency:    "USD",
-		LastUpdated: time.Now().Format("2006-01-02 15:04:05"),
+		LastUpdated: time.Now().Format(time.RFC3339),
 	}, nil
 }
