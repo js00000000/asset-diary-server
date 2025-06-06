@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"asset-diary/models"
 )
 
-// AssetPriceService is the default implementation of interfaces.AssetPriceServiceInterface
 type AssetPriceService struct {
 	httpClient *http.Client
 }
@@ -42,7 +42,6 @@ func (s *AssetPriceService) GetStockPrice(symbol string) (*models.TickerInfo, er
 	return s.getUSStockPrice(symbol)
 }
 
-// GetCryptoPrice gets the price of a cryptocurrency in USDT
 func (s *AssetPriceService) GetCryptoPrice(symbol string) (*models.TickerInfo, error) {
 	if symbol == "" {
 		return nil, fmt.Errorf("symbol is required")
@@ -78,13 +77,13 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*models.TickerIn
 	}
 
 	if len(data.MsgArray) == 0 {
-		return nil, fmt.Errorf("no data found for symbol: %s", symbol)
+		return nil, errors.New(InvalidSymbolError)
 	}
 
 	stockInfo := data.MsgArray[0]
 	price, err := strconv.ParseFloat(stockInfo.Z, 64)
 	if err != nil || price <= 0 {
-		return nil, fmt.Errorf("invalid price for symbol: %s", symbol)
+		return nil, errors.New(InvalidSymbolError)
 	}
 
 	return &models.TickerInfo{
@@ -111,6 +110,9 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*models.TickerInfo, e
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusBadRequest {
+			return nil, errors.New(InvalidSymbolError)
+		}
 		return nil, fmt.Errorf("failed to fetch crypto price: %s", resp.Status)
 	}
 
@@ -172,14 +174,10 @@ func (s *AssetPriceService) getUSStockPrice(symbol string) (*models.TickerInfo, 
 	}
 
 	if len(quotes) == 0 {
-		return nil, fmt.Errorf("no data found for symbol: %s", symbol)
+		return nil, errors.New(InvalidSymbolError)
 	}
 
 	quote := quotes[0]
-	if quote.Price <= 0 {
-		return nil, fmt.Errorf("invalid price for symbol: %s", symbol)
-	}
-
 	return &models.TickerInfo{
 		Price:       quote.Price,
 		Symbol:      quote.Symbol,

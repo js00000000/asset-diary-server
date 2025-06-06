@@ -103,14 +103,11 @@ func main() {
 	tradeService := services.NewTradeService(tradeRepo)
 	holdingService := services.NewHoldingService(tradeService)
 	userService := services.NewUserService(userRepo)
-
-	// Create base service and wrap it with caching decorator
-	assetPriceService := services.NewAssetPriceService()
-	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService, priceCacheRepo)
-
-	// Initialize Gemini services
 	geminiChatService := services.NewGeminiChatService()
 	geminiAssetPriceService := services.NewGeminiAssetPriceService(geminiChatService)
+	assetPriceService := services.NewAssetPriceService()
+	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
+	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
