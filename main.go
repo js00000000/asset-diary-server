@@ -63,6 +63,28 @@ func main() {
 
 	r := gin.Default()
 
+	// Configure trusted proxies based on environment
+	if env == "production" {
+		// In production, trust X-Forwarded-* headers from Netlify
+		err = r.SetTrustedProxies([]string{
+			"127.0.0.1",     // Localhost
+			"::1",           // IPv6 localhost
+			// Netlify serverless functions IP ranges
+			"34.138.0.0/15", // Netlify serverless functions
+			"34.149.0.0/16", // Netlify serverless functions
+			"35.201.0.0/16", // Netlify serverless functions
+		})
+	} else {
+		// In local development, only trust localhost
+		err = r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+	}
+
+	if err != nil {
+		log.Printf("Warning: Failed to set trusted proxies: %v", err)
+	} else {
+		log.Printf("[%s] Proxy configuration applied", env)
+	}
+
 	// CORS middleware for frontend on port 5173
 	r.Use(func(c *gin.Context) {
 		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
