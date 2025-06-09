@@ -179,10 +179,21 @@
     "/auth/refresh": {
       "post": {
         "summary": "Refresh access token",
-        "description": "Obtain a new access token using the refresh token cookie.",
+        "description": "Obtain a new access token using a refresh token. The refresh token can be provided either in the Authorization header (preferred) or as a cookie (legacy support).",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer token with refresh token (without 'Bearer ' prefix)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "New access token",
+            "description": "New tokens",
             "content": {
               "application/json": {
                 "schema": {
@@ -190,9 +201,14 @@
                   "properties": {
                     "token": {
                       "type": "string",
-                      "description": "JWT access token"
+                      "description": "New JWT access token"
+                    },
+                    "refreshToken": {
+                      "type": "string",
+                      "description": "New refresh token (should be stored and used for subsequent refresh requests)"
                     }
-                  }
+                  },
+                  "required": ["token", "refreshToken"]
                 }
               }
             }

@@ -5,6 +5,7 @@ import (
 	"asset-diary/services"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,8 +53,9 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 	h.setRefreshTokenCookie(c, response.RefreshToken)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"token": response.Token,
-		"user":  response.User,
+		"token":         response.Token,
+		"refreshToken": response.RefreshToken,
+		"user":         response.User,
 	})
 }
 
@@ -73,17 +75,26 @@ func (h *AuthHandler) SignIn(c *gin.Context) {
 	h.setRefreshTokenCookie(c, response.RefreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
-		"token": response.Token,
-		"user":  response.User,
+		"token":        response.Token,
+		"refreshToken": response.RefreshToken,
+		"user":         response.User,
 	})
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	refreshToken, err := c.Cookie("refresh_token")
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token missing"})
-		return
+	header := c.GetHeader("Authorization")
+	if header == "" || !strings.HasPrefix(header, "Bearer ") {
+		// Fallback to cookie for backward compatibility
+		var err error
+		header, err = c.Cookie("refresh_token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token missing"})
+			return
+		}
+	} else {
+		header = strings.TrimPrefix(header, "Bearer ")
 	}
+	refreshToken := header
 
 	accessToken, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
@@ -97,7 +108,10 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	h.setRefreshTokenCookie(c, newRefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{"token": accessToken})
+	c.JSON(http.StatusOK, gin.H{
+		"token":        accessToken,
+		"refreshToken": newRefreshToken,
+	})
 }
 
 func (h *AuthHandler) setRefreshTokenCookie(c *gin.Context, newRefreshToken string) {
