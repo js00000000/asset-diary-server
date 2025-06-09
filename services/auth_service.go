@@ -179,6 +179,7 @@ func generateAccessToken(userID string, email string) (string, error) {
 		"user_id": userID,
 		"email":   email,
 		"exp":     time.Now().Add(tokenExpiry).Unix(),
+		"jti":     uuid.New().String(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
@@ -203,6 +204,7 @@ func generateRefreshToken(userID string, email string) (string, error) {
 		"user_id": userID,
 		"email":   email,
 		"exp":     time.Now().Add(refreshExpiry).Unix(),
+		"jti":     uuid.New().String(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
