@@ -3,6 +3,7 @@ package handlers
 import (
 	"asset-diary/models"
 	"asset-diary/services"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -53,7 +54,7 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 	h.setRefreshTokenCookie(c, response.RefreshToken)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"token":         response.Token,
+		"token":        response.Token,
 		"refreshToken": response.RefreshToken,
 		"user":         response.User,
 	})
@@ -99,7 +100,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	accessToken, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		if err == services.ErrInvalidToken {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
 		}
@@ -121,8 +122,26 @@ func (h *AuthHandler) setRefreshTokenCookie(c *gin.Context, newRefreshToken stri
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
+	// Get refresh token from Authorization header or cookie
+	header := c.GetHeader("Authorization")
+	if header == "" || !strings.HasPrefix(header, "Bearer ") {
+		header, _ = c.Cookie("refresh_token")
+	} else {
+		header = strings.TrimPrefix(header, "Bearer ")
+	}
+
+	if header != "" {
+		// Try to revoke the refresh token if it exists
+		if err := h.authService.RevokeRefreshToken(header); err != nil {
+			// Log the error but don't fail the request
+			log.Printf("Failed to revoke refresh token: %v", err)
+		}
+	}
+
+	// Clear the refresh token cookie
 	frontendDomain := os.Getenv("FRONTEND_DOMAIN")
 	c.SetCookie("refresh_token", "", -1, "/", frontendDomain, true, true)
+
 	c.Status(http.StatusNoContent)
 }
 

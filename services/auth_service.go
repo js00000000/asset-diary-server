@@ -4,7 +4,9 @@ import (
 	"asset-diary/models"
 	"asset-diary/repositories"
 	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -30,6 +32,7 @@ type AuthServiceInterface interface {
 	RefreshToken(refreshToken string) (string, string, error)
 	ForgotPassword(email string) error
 	VerifyResetCode(email, code string) error
+	RevokeRefreshToken(token string) error
 }
 
 type AuthService struct {
@@ -58,13 +61,13 @@ func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthRespons
 		return nil, errors.New("email may already be registered")
 	}
 
-	token, refreshToken, err := generateTokens(user.ID, user.Email)
+	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.AuthResponse{
-		Token:        token,
+		Token:        accessToken,
 		User:         *user,
 		RefreshToken: refreshToken,
 	}, nil
@@ -85,31 +88,76 @@ func (s *AuthService) SignIn(email, password string) (*models.AuthResponse, erro
 		return nil, errors.New("invalid credentials")
 	}
 
-	token, refreshToken, err := generateTokens(user.ID, user.Email)
+	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.AuthResponse{
-		Token:        token,
+		Token:        accessToken,
 		RefreshToken: refreshToken,
 		User:         *user,
 	}, nil
 }
 
-func (s *AuthService) RefreshToken(refreshToken string) (string, string, error) {
-	claims, err := validateRefreshToken(refreshToken)
+func hashRefreshToken(token string) string {
+	h := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(h[:])
+}
+
+func (s *AuthService) generateAndStoreRefreshToken(userID, email string) (string, string, error) {
+	accessToken, refreshToken, err := generateTokens(userID, email)
 	if err != nil {
 		return "", "", err
 	}
 
-	userID, ok1 := claims["user_id"].(string)
-	email, ok2 := claims["email"].(string)
-	if !ok1 || !ok2 {
+	tokenHash := hashRefreshToken(refreshToken)
+
+	refreshExpiry := 168 * time.Hour
+	if expiryStr := os.Getenv("REFRESH_TOKEN_EXPIRY"); expiryStr != "" {
+		if duration, err := time.ParseDuration(expiryStr); err == nil {
+			refreshExpiry = duration
+		}
+	}
+
+	if err := s.authRepo.StoreRefreshToken(userID, tokenHash, time.Now().Add(refreshExpiry)); err != nil {
+		return "", "", fmt.Errorf("failed to store refresh token: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) RefreshToken(refreshToken string) (string, string, error) {
+	// First check if the token exists and is not revoked
+	tokenHash := hashRefreshToken(refreshToken)
+	token, err := s.authRepo.FindRefreshToken(tokenHash)
+	if err != nil {
 		return "", "", ErrInvalidToken
 	}
 
-	return generateTokens(userID, email)
+	// Then validate the JWT
+	claims, err := validateRefreshToken(refreshToken)
+	if err != nil {
+		return "", "", ErrInvalidToken
+	}
+
+	userID, ok1 := claims["user_id"].(string)
+	email, ok2 := claims["email"].(string)
+	if !ok1 || !ok2 || userID != token.UserID {
+		return "", "", ErrInvalidToken
+	}
+
+	// Revoke the old token
+	if err := s.authRepo.RevokeRefreshToken(tokenHash); err != nil {
+		return "", "", fmt.Errorf("failed to revoke refresh token: %w", err)
+	}
+
+	return s.generateAndStoreRefreshToken(userID, email)
+}
+
+func (s *AuthService) RevokeRefreshToken(token string) error {
+	tokenHash := hashRefreshToken(token)
+	return s.authRepo.RevokeRefreshToken(tokenHash)
 }
 
 func generateAccessToken(userID string, email string) (string, error) {
@@ -117,8 +165,7 @@ func generateAccessToken(userID string, email string) (string, error) {
 	if secret == "" {
 		return "", errors.New("JWT secret not set in environment")
 	}
-	
-	// Default to 1 hour if not set
+
 	tokenExpiry := 1 * time.Hour
 	tokenExpiryStr := os.Getenv("ACCESS_TOKEN_EXPIRY")
 	if tokenExpiryStr != "" {
@@ -143,8 +190,7 @@ func generateRefreshToken(userID string, email string) (string, error) {
 		return "", errors.New("JWT refresh secret not set in environment")
 	}
 
-	// Default to 7 days if not set
-	refreshExpiry := 168 * time.Hour // 7 days
+	refreshExpiry := 168 * time.Hour
 	refreshExpiryStr := os.Getenv("REFRESH_TOKEN_EXPIRY")
 	if refreshExpiryStr != "" {
 		duration, err := time.ParseDuration(refreshExpiryStr)
@@ -197,22 +243,18 @@ func generateTokens(userID, email string) (string, string, error) {
 }
 
 func (s *AuthService) ForgotPassword(email string) error {
-	// Check if user exists
 	user, err := s.authRepo.FindUserByEmail(email)
 	if err != nil || user == nil {
 		return errors.New("user not found")
 	}
 
-	// Generate 6-digit verification code
 	verificationCode := generateVerificationCode()
 
-	// Store verification code with expiry
 	err = s.authRepo.StoreVerificationCode(email, verificationCode, 3*time.Minute)
 	if err != nil {
 		return errors.New("failed to generate verification code")
 	}
 
-	// Send verification code via email
 	err = sendVerificationEmail(email, verificationCode)
 	if err != nil {
 		return errors.New("failed to send verification email")
@@ -222,28 +264,22 @@ func (s *AuthService) ForgotPassword(email string) error {
 }
 
 func (s *AuthService) VerifyResetCode(email, code string) error {
-	// Verify the code
 	isValid, err := s.authRepo.ValidateVerificationCode(email, code)
 	if err != nil || !isValid {
 		return errors.New("invalid or expired verification code")
 	}
 
-	// Generate a new random password
 	newPassword := generateRandomPassword()
 
-	// Hash the new password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("failed to generate new password")
 	}
 
-	// Update user's password
 	err = s.authRepo.UpdateUserPassword(email, string(hashedPassword))
 	if err != nil {
 		return errors.New("failed to update password")
 	}
-
-	// Send password via email
 	err = sendPasswordResetEmail(email, newPassword)
 	if err != nil {
 		return errors.New("failed to send password reset email")
@@ -253,7 +289,6 @@ func (s *AuthService) VerifyResetCode(email, code string) error {
 }
 
 func sendPasswordResetEmail(email, newPassword string) error {
-	// Email configuration
 	from := os.Getenv("EMAIL_FROM")
 	smtpUser := os.Getenv("SMTP_USER")
 	smtpPass := os.Getenv("SMTP_PASS")

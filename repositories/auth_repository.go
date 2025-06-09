@@ -15,6 +15,10 @@ type AuthRepositoryInterface interface {
 	StoreVerificationCode(email, code string, expiry time.Duration) error
 	ValidateVerificationCode(email, code string) (bool, error)
 	UpdateUserPassword(email, hashedPassword string) error
+	StoreRefreshToken(userID, tokenHash string, expiresAt time.Time) error
+	FindRefreshToken(tokenHash string) (*models.RefreshToken, error)
+	RevokeRefreshToken(tokenHash string) error
+	RevokeAllUserRefreshTokens(userID string) error
 }
 
 type AuthRepository struct {
@@ -66,17 +70,13 @@ func (r *AuthRepository) StoreVerificationCode(email, code string, expiry time.D
 		Email: email,
 	}
 
-	// First, try to find an existing verification code for this email
 	result := r.DB.Where(&verificationCode).First(&verificationCode)
 
-	// Update or create the verification code
 	if result.Error == gorm.ErrRecordNotFound {
-		// If not found, create a new record
 		verificationCode.Code = code
 		verificationCode.ExpiresAt = time.Now().Add(expiry)
 		result = r.DB.Create(&verificationCode)
 	} else {
-		// If found, update the existing record
 		verificationCode.Code = code
 		verificationCode.ExpiresAt = time.Now().Add(expiry)
 		result = r.DB.Save(&verificationCode)
@@ -100,13 +100,42 @@ func (r *AuthRepository) ValidateVerificationCode(email, code string) (bool, err
 		return false, result.Error
 	}
 
-	// Check if the verification code has expired
 	if time.Now().After(verificationCode.ExpiresAt) {
 		return false, nil
 	}
 
-	// Optional: Delete the verification code after successful validation
 	r.DB.Delete(&verificationCode)
 
 	return true, nil
+}
+
+func (r *AuthRepository) StoreRefreshToken(userID, tokenHash string, expiresAt time.Time) error {
+	token := &models.RefreshToken{
+		UserID:    userID,
+		TokenHash: tokenHash,
+		ExpiresAt: expiresAt,
+	}
+	return r.DB.Create(token).Error
+}
+
+func (r *AuthRepository) FindRefreshToken(tokenHash string) (*models.RefreshToken, error) {
+	var token models.RefreshToken
+	err := r.DB.Where("token_hash = ? AND revoked = ? AND expires_at > ?",
+		tokenHash, false, time.Now()).First(&token).Error
+	if err != nil {
+		return nil, err
+	}
+	return &token, nil
+}
+
+func (r *AuthRepository) RevokeRefreshToken(tokenHash string) error {
+	return r.DB.Model(&models.RefreshToken{}).
+		Where("token_hash = ?", tokenHash).
+		Update("revoked", true).Error
+}
+
+func (r *AuthRepository) RevokeAllUserRefreshTokens(userID string) error {
+	return r.DB.Model(&models.RefreshToken{}).
+		Where("user_id = ? AND revoked = ?", userID, false).
+		Update("revoked", true).Error
 }

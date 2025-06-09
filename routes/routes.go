@@ -21,6 +21,7 @@ func SetupRoutes(router *gin.RouterGroup,
 		public.POST("/sign-in", authHandler.SignIn)
 		public.POST("/sign-up", authHandler.SignUp)
 		public.POST("/refresh", authHandler.RefreshToken)
+		public.POST("/logout", authHandler.Logout)
 		public.POST("/forgot-password", authHandler.ForgotPassword)
 		public.POST("/verify-reset-code", authHandler.VerifyResetCode)
 	}
@@ -30,11 +31,6 @@ func SetupRoutes(router *gin.RouterGroup,
 	protected := router.Group("/")
 	protected.Use(middleware.JWTAuthMiddleware())
 	{
-		auth := protected.Group("/auth")
-		{
-			auth.POST("/logout", authHandler.Logout)
-		}
-
 		profile := protected.Group("/profile")
 		{
 			profile.POST("/change-password", profileHandler.ChangePassword)
