@@ -15,6 +15,7 @@ func SetupRoutes(router *gin.RouterGroup,
 	holdingHandler *handlers.HoldingHandler,
 	assetPriceHandler *handlers.AssetPriceHandler,
 	geminiTestHandler *handlers.GeminiTestHandler,
+	exchangeRateHandler *handlers.ExchangeRateHandler,
 ) {
 	public := router.Group("/auth")
 	{
@@ -27,6 +28,12 @@ func SetupRoutes(router *gin.RouterGroup,
 	}
 
 	geminiTestHandler.RegisterRoutes(router.Group(""))
+
+	// Public exchange rate endpoints
+	exchangeRates := router.Group("/exchange-rates")
+	{
+		exchangeRates.GET("/:base_currency", exchangeRateHandler.GetRatesByBaseCurrency)
+	}
 
 	protected := router.Group("/")
 	protected.Use(middleware.JWTAuthMiddleware())

@@ -3,6 +3,7 @@ package main
 import (
 	"asset-diary/db"
 	"asset-diary/handlers"
+	"asset-diary/jobs"
 	"asset-diary/repositories"
 	"asset-diary/routes"
 	"asset-diary/services"
@@ -132,6 +133,17 @@ func main() {
 	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
 	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
 
+	// Initialize exchange rate service and job
+	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
+	exchangeRateService := services.NewExchangeRateService(exchangeRateRepo)
+	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService)
+	// Start the exchange rate job scheduler
+	exchangeRateScheduler := exchangeRateJob.Schedule()
+	defer exchangeRateScheduler.Stop()
+
+	// Initialize exchange rate handler
+	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
@@ -141,7 +153,7 @@ func main() {
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
 	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
 
-	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler)
+	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler, exchangeRateHandler)
 
 	app.GET("/swagger/*any", ginSwaggerHandler())
 

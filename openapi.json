@@ -12,6 +12,46 @@
     }
   ],
   "paths": {
+    "/api/exchange-rates/{base_currency}": {
+      "get": {
+        "summary": "Get exchange rates by base currency",
+        "description": "Get all exchange rates for a specific base currency",
+        "tags": ["Exchange Rates"],
+        "parameters": [
+          {
+            "name": "base_currency",
+            "in": "path",
+            "description": "Base currency code (e.g., TWD, USD)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRatesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid base currency"
+          },
+          "404": {
+            "description": "No exchange rates found for the specified base currency"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/stock/price/{symbol}": {
       "get": {
         "summary": "Get stock price",
@@ -802,6 +842,27 @@
       }
     },
     "schemas": {
+      "ExchangeRatesResponse": {
+        "type": "object",
+        "properties": {
+          "base_currency": {
+            "type": "string",
+            "example": "TWD"
+          },
+          "rates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "format": "float"
+            },
+            "example": {
+              "USD": 0.0325,
+              "EUR": 0.0298
+            }
+          }
+        },
+        "required": ["base_currency", "rates"]
+      },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
