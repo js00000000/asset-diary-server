@@ -5,7 +5,6 @@ import (
 	"asset-diary/repositories"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -17,11 +16,15 @@ type ExchangeRateServiceInterface interface {
 }
 
 type ExchangeRateService struct {
-	repo repositories.ExchangeRateRepositoryInterface
+	repo                repositories.ExchangeRateRepositoryInterface
+	supportedCurrencies []string
 }
 
-func NewExchangeRateService(repo repositories.ExchangeRateRepositoryInterface) *ExchangeRateService {
-	return &ExchangeRateService{repo: repo}
+func NewExchangeRateService(repo repositories.ExchangeRateRepositoryInterface, supportedCurrencies []string) *ExchangeRateService {
+	return &ExchangeRateService{
+		repo:                repo,
+		supportedCurrencies: supportedCurrencies,
+	}
 }
 
 type ExchangeRateResponse struct {
@@ -47,68 +50,91 @@ func (s *ExchangeRateService) GetRatesByBaseCurrency(baseCurrency string) (map[s
 }
 
 func (s *ExchangeRateService) FetchAndStoreRates() error {
-	// TWD is the base currency we're interested in
-	baseCurrency := "TWD"
-	compareCurrencies := []string{"USD"}
-	url := fmt.Sprintf("https://open.er-api.com/v6/latest/%s", baseCurrency)
+	var totalSuccessCount int
+	var lastErr error
 
-	// Fetch the latest rates
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to fetch exchange rates: %w", err)
-	}
-	defer resp.Body.Close()
+	for _, baseCurrency := range s.supportedCurrencies {
+		// For each base currency, we'll compare against other base currencies
+		compareCurrencies := []string{}
+		for _, other := range s.supportedCurrencies {
+			if other != baseCurrency {
+				compareCurrencies = append(compareCurrencies, other)
+			}
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+		if len(compareCurrencies) == 0 {
+			continue // Skip if no currencies to compare
+		}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	var apiResponse ExchangeRateResponse
-	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	if apiResponse.Result != "success" {
-		return fmt.Errorf("API returned non-success status: %s", apiResponse.Result)
-	}
-
-	lastUpdated := time.Unix(apiResponse.LastUpdated, 0).UTC()
-	var successCount int
-
-	// Store each currency pair
-	for _, currency := range compareCurrencies {
-		rate, exists := apiResponse.Rates[currency]
-		if !exists {
-			log.Printf("Warning: No rate found for currency %s", currency)
+		url := fmt.Sprintf("https://open.er-api.com/v6/latest/%s", baseCurrency)
+		resp, err := http.Get(url)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to fetch exchange rates for %s: %w", baseCurrency, err)
+			log.Println(lastErr)
 			continue
 		}
 
-		exchangeRate := &models.ExchangeRate{
-			BaseCurrency:   baseCurrency,
-			TargetCurrency: currency,
-			Rate:           rate,
-			LastUpdated:    lastUpdated,
-		}
-
-		// Store or update in database
-		if err := s.repo.Upsert(exchangeRate); err != nil {
-			log.Printf("Failed to update exchange rate for %s/%s: %v", baseCurrency, currency, err)
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("unexpected status code for %s: %d", baseCurrency, resp.StatusCode)
+			log.Println(lastErr)
 			continue
 		}
 
-		successCount++
+		var apiResponse ExchangeRateResponse
+		if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("failed to decode response for %s: %w", baseCurrency, err)
+			log.Println(lastErr)
+			continue
+		}
+		resp.Body.Close()
+
+		if apiResponse.Result != "success" {
+			lastErr = fmt.Errorf("api returned non-success status for %s: %s", baseCurrency, apiResponse.Result)
+			log.Println(lastErr)
+			continue
+		}
+
+		lastUpdated := time.Unix(apiResponse.LastUpdated, 0)
+		successCount := 0
+
+		// Store each currency pair
+		for _, currency := range compareCurrencies {
+			rate, exists := apiResponse.Rates[currency]
+			if !exists {
+				log.Printf("Warning: No rate found for currency %s", currency)
+				continue
+			}
+
+			exchangeRate := &models.ExchangeRate{
+				BaseCurrency:   baseCurrency,
+				TargetCurrency: currency,
+				Rate:           rate,
+				LastUpdated:    lastUpdated,
+			}
+
+			// Store or update in database
+			if err := s.repo.Upsert(exchangeRate); err != nil {
+				log.Printf("Failed to update exchange rate for %s/%s: %v", baseCurrency, currency, err)
+				continue
+			}
+
+			successCount++
+			log.Printf("Successfully updated exchange rate for %s/%s at %s\n",
+				baseCurrency, currency, lastUpdated.Format(time.RFC3339))
+		}
+
+		totalSuccessCount += successCount
 	}
 
-	log.Printf("Successfully updated %d exchange rates for %s at %s\n",
-		successCount, baseCurrency, lastUpdated.Format(time.RFC3339))
+	if totalSuccessCount == 0 && lastErr != nil {
+		return fmt.Errorf("failed to store any exchange rates. Last error: %w", lastErr)
+	}
 
-	if successCount == 0 {
-		return fmt.Errorf("failed to store any exchange rates")
+	if lastErr != nil {
+		// We had some successes but also some failures
+		log.Printf("Partial success: %v\n", lastErr)
 	}
 
 	return nil

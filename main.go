@@ -1,17 +1,18 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+
 	"asset-diary/db"
 	"asset-diary/handlers"
 	"asset-diary/jobs"
 	"asset-diary/repositories"
 	"asset-diary/routes"
 	"asset-diary/services"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -133,9 +134,15 @@ func main() {
 	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
 	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
 
+	// Load base currencies from environment variable (comma-separated)
+	supportedCurrencies := []string{"TWD", "USD"} // Default values
+	if currencies := os.Getenv("SUPPORTED_CURRENCIES"); currencies != "" {
+		supportedCurrencies = strings.Split(currencies, ",")
+	}
+
 	// Initialize exchange rate service and job
 	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
-	exchangeRateService := services.NewExchangeRateService(exchangeRateRepo)
+	exchangeRateService := services.NewExchangeRateService(exchangeRateRepo, supportedCurrencies)
 	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService)
 	// Start the exchange rate job scheduler
 	exchangeRateScheduler := exchangeRateJob.Schedule()
