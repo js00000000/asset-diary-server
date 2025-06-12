@@ -151,6 +151,17 @@ func main() {
 	// Initialize exchange rate handler
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 
+	// Get server URL from environment variable or use default
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3000" // Default value
+	}
+
+	// Initialize and start health check job
+	healthCheckJob := jobs.NewHealthCheckJob(serverURL)
+	healthCheckScheduler := healthCheckJob.Schedule()
+	defer healthCheckScheduler.Stop()
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
@@ -159,8 +170,9 @@ func main() {
 	holdingHandler := handlers.NewHoldingHandler(holdingService)
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
 	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
+	healthCheckHandler := handlers.NewHealthCheckHandler()
 
-	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler, exchangeRateHandler)
+	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler, exchangeRateHandler, healthCheckHandler)
 
 	app.GET("/swagger/*any", ginSwaggerHandler())
 

@@ -16,7 +16,9 @@ func SetupRoutes(router *gin.RouterGroup,
 	assetPriceHandler *handlers.AssetPriceHandler,
 	geminiTestHandler *handlers.GeminiTestHandler,
 	exchangeRateHandler *handlers.ExchangeRateHandler,
+	healthCheckHandler *handlers.HealthCheckHandler,
 ) {
+	router.GET("/healthz", healthCheckHandler.HealthCheck)
 	public := router.Group("/auth")
 	{
 		public.POST("/sign-in", authHandler.SignIn)
