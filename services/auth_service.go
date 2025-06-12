@@ -46,7 +46,7 @@ func NewAuthService(authRepo repositories.AuthRepositoryInterface) *AuthService 
 func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthResponse, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.New("failed to hash password")
+		return nil, err
 	}
 
 	user := &models.User{
@@ -58,7 +58,7 @@ func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthRespons
 
 	err = s.authRepo.CreateUser(user, string(hashed))
 	if err != nil {
-		return nil, errors.New("email may already be registered")
+		return nil, err
 	}
 
 	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)

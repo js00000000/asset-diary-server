@@ -41,13 +41,33 @@ func NewAuthHandler(authService services.AuthServiceInterface) *AuthHandler {
 func (h *AuthHandler) SignUp(c *gin.Context) {
 	var req models.UserSignUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInvalidRequest,
+			err.Error(),
+		))
 		return
 	}
 
 	response, err := h.authService.SignUp(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if models.IsDuplicateError(err, "users_email_key") {
+			c.JSON(http.StatusBadRequest, models.NewAppError(
+				models.ErrCodeDuplicateEmail,
+				"This email is already registered",
+			))
+			return
+		}
+		if models.IsDuplicateError(err, "users_username_key") {
+			c.JSON(http.StatusBadRequest, models.NewAppError(
+				models.ErrCodeDuplicateUsername,
+				"This username is already taken",
+			))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, models.NewAppError(
+			models.ErrCodeInternal,
+			"Unexpected error",
+		))
 		return
 	}
 

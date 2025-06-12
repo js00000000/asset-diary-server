@@ -34,7 +34,7 @@ func (r *AuthRepository) CreateUser(user *models.User, hashedPassword string) er
 
 	result := r.DB.Create(user)
 	if result.Error != nil {
-		log.Println("Failed to insert user:", result.Error)
+		log.Println("Failed to create user:", result.Error)
 		return result.Error
 	}
 	return nil
