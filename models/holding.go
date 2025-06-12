@@ -6,6 +6,7 @@ type Holding struct {
 	TickerName   string  `json:"tickerName" db:"ticker_name"`
 	Quantity     float64 `json:"quantity" db:"quantity"`
 	AveragePrice float64 `json:"averagePrice" db:"average_price"`
+	Price        float64 `json:"price,omitempty" db:"-"` // Current market price, not stored in DB
 	AssetType    string  `json:"assetType" db:"asset_type"`
 	Currency     string  `json:"currency" db:"currency"`
 }

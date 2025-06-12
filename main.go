@@ -126,13 +126,13 @@ func main() {
 	profileService := services.NewProfileService(profileRepo)
 	accountService := services.NewAccountService(accountRepo)
 	tradeService := services.NewTradeService(tradeRepo)
-	holdingService := services.NewHoldingService(tradeService)
 	userService := services.NewUserService(userRepo)
 	geminiChatService := services.NewGeminiChatService()
 	geminiAssetPriceService := services.NewGeminiAssetPriceService(geminiChatService)
 	assetPriceService := services.NewAssetPriceService()
 	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
 	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
+	holdingService := services.NewHoldingService(tradeService, assetPriceServiceCacheDecorator)
 
 	// Load base currencies from environment variable (comma-separated)
 	supportedCurrencies := []string{"TWD", "USD"} // Default values

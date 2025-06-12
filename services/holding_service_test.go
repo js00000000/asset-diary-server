@@ -2,6 +2,7 @@ package services
 
 import (
 	"asset-diary/models"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,18 +27,50 @@ func (m *MockTradeService) CreateTrade(userID string, trade models.Trade) (*mode
 	}
 	return args.Get(0).(*models.Trade), args.Error(1)
 }
+
 func (m *MockTradeService) UpdateTrade(userID, tradeID string, req models.TradeUpdateRequest) (*models.Trade, error) {
 	panic("not implemented")
 }
+
 func (m *MockTradeService) DeleteTrade(userID, tradeID string) (bool, error) {
 	panic("not implemented")
 }
+
 func (m *MockTradeService) IsAccountOwnedByUser(accountID, userID string) (bool, error) {
 	panic("not implemented")
 }
+
 func (m *MockTradeService) IsTradeOwnedByUser(tradeID, userID string) (bool, error) {
 	panic("not implemented")
 }
+
+// MockPriceService is a mock implementation of AssetPriceServiceInterface
+type MockPriceService struct {
+	mock.Mock
+}
+
+func (m *MockPriceService) GetStockPrice(symbol string) (*models.TickerInfo, error) {
+	args := m.Called(symbol)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TickerInfo), args.Error(1)
+}
+
+func (m *MockPriceService) GetCryptoPrice(symbol string) (*models.TickerInfo, error) {
+	args := m.Called(symbol)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.TickerInfo), args.Error(1)
+}
+
+// byTicker implements sort.Interface for []models.Holding based on the Ticker field
+type byTicker []models.Holding
+
+func (a byTicker) Len() int           { return len(a) }
+func (a byTicker) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byTicker) Less(i, j int) bool { return a[i].Ticker < a[j].Ticker }
 
 func TestListAssets(t *testing.T) {
 	tests := []struct {
@@ -100,6 +133,7 @@ func TestListAssets(t *testing.T) {
 					Ticker:       "AAPL",
 					Quantity:     10,
 					AveragePrice: (5*100 + 5*300) / 10,
+					Price:        100,
 					AssetType:    "stock",
 					Currency:     "USD",
 				},
@@ -139,6 +173,7 @@ func TestListAssets(t *testing.T) {
 					Ticker:       "AAPL",
 					Quantity:     10,
 					AveragePrice: (5*100 + 5*200) / 10,
+					Price:        100,
 					AssetType:    "stock",
 					Currency:     "USD",
 				},
@@ -166,20 +201,8 @@ func TestListAssets(t *testing.T) {
 				},
 			},
 			expectedAssets: []models.Holding{
-				{
-					Ticker:       "AAPL",
-					Quantity:     10,
-					AveragePrice: 100,
-					AssetType:    "stock",
-					Currency:     "USD",
-				},
-				{
-					Ticker:       "BTC",
-					Quantity:     1,
-					AveragePrice: 50000,
-					AssetType:    "crypto",
-					Currency:     "USD",
-				},
+				{Ticker: "AAPL", Quantity: 10, AveragePrice: 100, Price: 100, AssetType: "stock", Currency: "USD"},
+				{Ticker: "BTC", Quantity: 1, AveragePrice: 50000, Price: 200, AssetType: "crypto", Currency: "USD"},
 			},
 			expectedError: nil,
 		},
@@ -204,20 +227,8 @@ func TestListAssets(t *testing.T) {
 				},
 			},
 			expectedAssets: []models.Holding{
-				{
-					Ticker:       "AAPL",
-					Quantity:     10,
-					AveragePrice: 100,
-					AssetType:    "stock",
-					Currency:     "USD",
-				},
-				{
-					Ticker:       "AAPL",
-					Quantity:     5,
-					AveragePrice: 80,
-					AssetType:    "stock",
-					Currency:     "EUR",
-				},
+				{Ticker: "AAPL", Quantity: 10, AveragePrice: 100, Price: 100, AssetType: "stock", Currency: "USD"},
+				{Ticker: "AAPL", Quantity: 5, AveragePrice: 80, Price: 100, AssetType: "stock", Currency: "EUR"},
 			},
 			expectedError: nil,
 		},
@@ -227,17 +238,29 @@ func TestListAssets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mock
 			mockTradeService := new(MockTradeService)
-			mockTradeService.On("ListTrades", "test-user").Return(tt.trades, tt.expectedError)
+			mockTradeService.On("ListTrades", "user1").Return(tt.trades, tt.expectedError)
 
-			// Create service with mock
-			service := NewHoldingService(mockTradeService)
+			priceService := new(MockPriceService)
+			// Set up default mock response for price service
+			priceService.On("GetStockPrice", mock.Anything).Return(&models.TickerInfo{Price: 100.0}, nil)
+			priceService.On("GetCryptoPrice", mock.Anything).Return(&models.TickerInfo{Price: 200.0}, nil)
 
-			// Call service method
-			assets, err := service.ListHoldings("test-user")
+			service := NewHoldingService(mockTradeService, priceService)
+
+			// Call the method under test
+			holdings, err := service.ListHoldings("user1")
 
 			// Assert results
-			assert.Equal(t, tt.expectedError, err)
-			assert.Equal(t, tt.expectedAssets, assets)
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Nil(t, holdings)
+			} else {
+				assert.NoError(t, err)
+				// Sort both slices by ticker before comparison
+				sort.Sort(byTicker(holdings))
+				sort.Sort(byTicker(tt.expectedAssets))
+				assert.Equal(t, tt.expectedAssets, holdings)
+			}
 
 			// Verify mock expectations
 			mockTradeService.AssertExpectations(t)
