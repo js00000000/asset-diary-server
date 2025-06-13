@@ -118,7 +118,7 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		if asset.Quantity > 0 {
 			tickerInfo, err := s.getCurrentPrice(asset.Ticker, asset.AssetType)
 			if err != nil {
-				log.Printf("Error fetching price for %s: %v", asset.Ticker, err)
+				log.Printf("Error fetching price for %s %s: %v", asset.AssetType, asset.Ticker, err)
 				asset.Price = 0
 			} else {
 				asset.Price = tickerInfo.Price
