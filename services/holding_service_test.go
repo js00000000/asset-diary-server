@@ -45,7 +45,6 @@ func (m *MockTradeService) IsTradeOwnedByUser(tradeID, userID string) (bool, err
 	panic("not implemented")
 }
 
-// MockProfileService is a mock implementation of ProfileServiceInterface
 type MockProfileService struct {
 	mock.Mock
 }
@@ -71,7 +70,14 @@ func (m *MockProfileService) UpdateProfile(userID string, req *models.UserUpdate
 	return args.Get(0).(*models.Profile), args.Error(1)
 }
 
-// MockExchangeRateService is a mock implementation of ExchangeRateServiceInterface
+func (m *MockProfileService) GetDefaultCurrency(userID string) (string, error) {
+	args := m.Called(userID)
+	if args.Get(0) == nil {
+		return "", args.Error(1)
+	}
+	return args.Get(0).(string), args.Error(1)
+}
+
 type MockExchangeRateService struct {
 	mock.Mock
 }
@@ -89,7 +95,6 @@ func (m *MockExchangeRateService) FetchAndStoreRates() error {
 	return args.Error(0)
 }
 
-// MockPriceService is a mock implementation of AssetPriceServiceInterface
 type MockPriceService struct {
 	mock.Mock
 }
@@ -178,12 +183,12 @@ func TestListHoldings(t *testing.T) {
 			},
 			expectedAssets: []models.Holding{
 				{
-					Ticker:       "AAPL",
-					Quantity:     10,
-					AveragePrice: (5*100 + 5*300) / 10,
-					Price:        100,
-					AssetType:    "stock",
-					Currency:     "USD",
+					Ticker:      "AAPL",
+					Quantity:    10,
+					AverageCost: (5*100 + 5*300) / 10,
+					Price:       100,
+					AssetType:   "stock",
+					Currency:    "USD",
 				},
 			},
 			expectedError: nil,
@@ -219,12 +224,12 @@ func TestListHoldings(t *testing.T) {
 			},
 			expectedAssets: []models.Holding{
 				{
-					Ticker:       "AAPL",
-					Quantity:     10,
-					AveragePrice: (5*100 + 5*200) / 10,
-					Price:        100,
-					AssetType:    "stock",
-					Currency:     "USD",
+					Ticker:      "AAPL",
+					Quantity:    10,
+					AverageCost: (5*100 + 5*200) / 10,
+					Price:       100,
+					AssetType:   "stock",
+					Currency:    "USD",
 				},
 			},
 			expectedError: nil,
@@ -251,8 +256,8 @@ func TestListHoldings(t *testing.T) {
 				},
 			},
 			expectedAssets: []models.Holding{
-				{Ticker: "AAPL", Quantity: 10, AveragePrice: 100, Price: 100, AssetType: "stock", Currency: "USD"},
-				{Ticker: "BTC", Quantity: 1, AveragePrice: 50000, Price: 200, AssetType: "crypto", Currency: "USD"},
+				{Ticker: "AAPL", Quantity: 10, AverageCost: 100, Price: 100, AssetType: "stock", Currency: "USD"},
+				{Ticker: "BTC", Quantity: 1, AverageCost: 50000, Price: 200, AssetType: "crypto", Currency: "USD"},
 			},
 			expectedError: nil,
 			setupMocks:    func(*MockPriceService) {},
@@ -278,8 +283,8 @@ func TestListHoldings(t *testing.T) {
 				},
 			},
 			expectedAssets: []models.Holding{
-				{Ticker: "AAPL", Quantity: 10, AveragePrice: 100, Price: 100, AssetType: "stock", Currency: "USD"},
-				{Ticker: "AAPL", Quantity: 5, AveragePrice: 80, Price: 100, AssetType: "stock", Currency: "EUR"},
+				{Ticker: "AAPL", Quantity: 10, AverageCost: 100, Price: 100, AssetType: "stock", Currency: "USD"},
+				{Ticker: "AAPL", Quantity: 5, AverageCost: 80, Price: 100, AssetType: "stock", Currency: "EUR"},
 			},
 			expectedError: nil,
 			setupMocks:    func(*MockPriceService) {},
@@ -374,7 +379,7 @@ func TestListHoldings(t *testing.T) {
 					actual := holdings[i]
 					assert.Equal(t, expected.Ticker, actual.Ticker, "ticker mismatch")
 					assert.Equal(t, expected.Quantity, actual.Quantity, "quantity mismatch for "+expected.Ticker)
-					assert.Equal(t, expected.AveragePrice, actual.AveragePrice, "average price mismatch for "+expected.Ticker)
+					assert.Equal(t, expected.AverageCost, actual.AverageCost, "average price mismatch for "+expected.Ticker)
 					assert.Equal(t, expected.AssetType, actual.AssetType, "asset type mismatch for "+expected.Ticker)
 					assert.Equal(t, expected.Currency, actual.Currency, "currency mismatch for "+expected.Ticker)
 				}

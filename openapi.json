@@ -457,7 +457,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Account"
+                    "$ref": "#/components/schemas/AccountResponse"
                   }
                 }
               }
@@ -725,31 +725,6 @@
           },
           "404": {
             "description": "Not Found"
-          }
-        }
-      }
-    },
-    "/portfolio": {
-      "get": {
-        "summary": "Portfolio summary",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Portfolio summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PortfolioSummary"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
           }
         }
       }
@@ -1087,6 +1062,33 @@
           }
         }
       },
+      "AccountResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },  
+          "currency": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "number"
+          },
+          "balanceInDefaultCurrency": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "currency",
+          "balance",
+          "balanceInDefaultCurrency"
+        ]
+      },
       "Trade": {
         "type": "object",
         "properties": {
@@ -1287,26 +1289,6 @@
           }
         }
       },
-      "PortfolioSummary": {
-        "type": "object",
-        "properties": {
-          "accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Account"
-            }
-          },
-          "assets": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "totalValue": {
-            "type": "number"
-          }
-        }
-      },
       "TickerInfo": {
         "type": "object",
         "properties": {
@@ -1350,7 +1332,7 @@
             "format": "float",
             "description": "Number of units held"
           },
-          "averagePrice": {
+          "averageCost": {
             "type": "number",
             "format": "float",
             "description": "Average purchase price per unit"
@@ -1376,7 +1358,7 @@
           "totalCost": {
             "type": "number",
             "format": "float",
-            "description": "Total cost basis of the holding (quantity * averagePrice)",
+            "description": "Total cost basis of the holding (quantity * averageCost)",
             "readOnly": true
           },
           "totalValue": {
@@ -1408,7 +1390,7 @@
           "ticker",
           "tickerName",
           "quantity",
-          "averagePrice",
+          "averageCost",
           "assetType",
           "currency",
           "totalCost",

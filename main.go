@@ -177,7 +177,7 @@ func main() {
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
-	accountHandler := handlers.NewAccountHandler(accountService)
+	accountHandler := handlers.NewAccountHandler(accountService, exchangeRateService, profileService)
 	tradeHandler := handlers.NewTradeHandler(tradeService)
 	holdingHandler := handlers.NewHoldingHandler(holdingService)
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)

@@ -9,13 +9,13 @@ type ProfileServiceInterface interface {
 	GetProfile(userID string) (*models.Profile, error)
 	ChangePassword(userID string, currentPassword, newPassword string) error
 	UpdateProfile(userID string, req *models.UserUpdateRequest) (*models.Profile, error)
+	GetDefaultCurrency(userID string) (string, error)
 }
 
 type ProfileService struct {
 	repo repositories.ProfileRepositoryInterface
 }
 
-// NewProfileService creates a new ProfileService instance with a repository
 func NewProfileService(repo repositories.ProfileRepositoryInterface) *ProfileService {
 	return &ProfileService{
 		repo: repo,
@@ -32,4 +32,16 @@ func (s *ProfileService) ChangePassword(userID string, currentPassword, newPassw
 
 func (s *ProfileService) UpdateProfile(userID string, req *models.UserUpdateRequest) (*models.Profile, error) {
 	return s.repo.UpdateProfile(userID, req)
+}
+
+func (s *ProfileService) GetDefaultCurrency(userID string) (string, error) {
+	profile, err := s.GetProfile(userID)
+	if err != nil {
+		return "", err
+	}
+
+	if profile.InvestmentProfile == nil {
+		return "USD", nil
+	}
+	return profile.InvestmentProfile.DefaultCurrency, nil
 }

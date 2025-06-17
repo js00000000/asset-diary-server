@@ -117,7 +117,7 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 				}
 			}
 			if totalRemainingQty > 0 {
-				asset.AveragePrice = totalCost / totalRemainingQty
+				asset.AverageCost = totalCost / totalRemainingQty
 			}
 		}
 	}
@@ -155,7 +155,7 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 				asset.Price = tickerInfo.Price
 				asset.TotalValue = asset.Price * asset.Quantity
 			}
-			asset.TotalCost = asset.AveragePrice * asset.Quantity
+			asset.TotalCost = asset.AverageCost * asset.Quantity
 			asset.TotalValueInDefaultCurrency = asset.TotalValue
 			asset.GainLoss = asset.TotalValue - asset.TotalCost
 			asset.GainLossPercentage = (asset.GainLoss / asset.TotalCost) * 100

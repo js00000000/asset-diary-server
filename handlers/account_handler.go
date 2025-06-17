@@ -10,14 +10,15 @@ import (
 )
 
 type AccountHandler struct {
-	AccountService services.AccountServiceInterface
+	AccountService      services.AccountServiceInterface
+	ExchangeRateService services.ExchangeRateServiceInterface
+	ProfileService      services.ProfileServiceInterface
 }
 
-func NewAccountHandler(accountService services.AccountServiceInterface) *AccountHandler {
-	return &AccountHandler{AccountService: accountService}
+func NewAccountHandler(accountService services.AccountServiceInterface, exchangeRateService services.ExchangeRateServiceInterface, profileService services.ProfileServiceInterface) *AccountHandler {
+	return &AccountHandler{AccountService: accountService, ExchangeRateService: exchangeRateService, ProfileService: profileService}
 }
 
-// ListAccounts returns all accounts for the current user
 func (h *AccountHandler) ListAccounts(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -29,19 +30,33 @@ func (h *AccountHandler) ListAccounts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch accounts"})
 		return
 	}
+	defaultCurrency, err := h.ProfileService.GetDefaultCurrency(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch profile"})
+		return
+	}
+	exchangeRates, err := h.ExchangeRateService.GetRatesByBaseCurrency(defaultCurrency)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch exchange rates"})
+		return
+	}
 	responses := []models.AccountResponse{}
 	for _, acc := range accounts {
+		balanceInDefaultCurrency := acc.Balance
+		if acc.Balance != 0 && acc.Currency != defaultCurrency {
+			balanceInDefaultCurrency = acc.Balance / exchangeRates[acc.Currency]
+		}
 		responses = append(responses, models.AccountResponse{
-			ID:       acc.ID,
-			Name:     acc.Name,
-			Currency: acc.Currency,
-			Balance:  acc.Balance,
+			ID:                       acc.ID,
+			Name:                     acc.Name,
+			Currency:                 acc.Currency,
+			Balance:                  acc.Balance,
+			BalanceInDefaultCurrency: balanceInDefaultCurrency,
 		})
 	}
 	c.JSON(http.StatusOK, responses)
 }
 
-// CreateAccount creates a new account for the current user
 func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -67,7 +82,6 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-// UpdateAccount updates an account by id for the current user
 func (h *AccountHandler) UpdateAccount(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
@@ -94,7 +108,6 @@ func (h *AccountHandler) UpdateAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// DeleteAccount deletes an account by id for the current user
 func (h *AccountHandler) DeleteAccount(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {

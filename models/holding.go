@@ -4,7 +4,7 @@ type Holding struct {
 	Ticker                      string  `json:"ticker" db:"ticker"`
 	TickerName                  string  `json:"tickerName" db:"ticker_name"`
 	Quantity                    float64 `json:"quantity" db:"quantity"`
-	AveragePrice                float64 `json:"averagePrice" db:"average_price"`
+	AverageCost                 float64 `json:"averageCost" db:"average_cost"`
 	Price                       float64 `json:"price,omitempty" db:"-"`
 	AssetType                   string  `json:"assetType" db:"asset_type"`
 	Currency                    string  `json:"currency" db:"currency"`
