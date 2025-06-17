@@ -99,6 +99,14 @@ func (s *ExchangeRateService) FetchAndStoreRates() error {
 		lastUpdated := time.Unix(apiResponse.LastUpdated, 0)
 		successCount := 0
 
+		// TODO: remove this after USDT is added to the API
+		// add USDT to api Response same rate with USD but base on base currency
+		if baseCurrency == "USD" {
+			apiResponse.Rates["USDT"] = 1.0
+		} else {
+			apiResponse.Rates["USDT"] = apiResponse.Rates["USD"]
+		}
+
 		// Store each currency pair
 		for _, currency := range compareCurrencies {
 			rate, exists := apiResponse.Rates[currency]

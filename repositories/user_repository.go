@@ -9,6 +9,7 @@ import (
 // UserRepositoryInterface 定義了使用者和個人檔案資料庫操作的介面
 type UserRepositoryInterface interface {
 	DeleteUser(userID string) error
+	ListAllUserIDs() ([]string, error)
 }
 
 // UserRepository 實作了 UserRepositoryInterface
@@ -26,4 +27,20 @@ func (r *UserRepository) DeleteUser(userID string) error {
 	// Delete user - cascade will handle related records
 	result := r.db.Where(&models.User{ID: userID}).Delete(&models.User{})
 	return result.Error
+}
+
+// ListAllUserIDs 獲取所有使用者的 ID
+func (r *UserRepository) ListAllUserIDs() ([]string, error) {
+	var users []models.User
+	result := r.db.Select("id").Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	userIDs := make([]string, 0, len(users))
+	for _, user := range users {
+		userIDs = append(userIDs, user.ID)
+	}
+
+	return userIDs, nil
 }

@@ -6,6 +6,7 @@ import (
 
 type UserServiceInterface interface {
 	DeleteUser(userID string) error
+	GetAllUserIDs() ([]string, error)
 }
 
 type UserService struct {
@@ -20,4 +21,9 @@ func NewUserService(userRepo repositories.UserRepositoryInterface) *UserService 
 
 func (s *UserService) DeleteUser(userID string) error {
 	return s.userRepo.DeleteUser(userID)
+}
+
+// GetAllUserIDs returns a list of all user IDs in the system
+func (s *UserService) GetAllUserIDs() ([]string, error) {
+	return s.userRepo.ListAllUserIDs()
 }

@@ -151,6 +151,20 @@ func main() {
 	// Initialize exchange rate handler
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 
+	// Initialize daily asset service and job
+	dailyAssetRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
+	dailyAssetService := services.NewDailyTotalAssetValueService(
+		dailyAssetRepo,
+		holdingService,
+		exchangeRateService,
+		profileService,
+		userService,
+	)
+	dailyAssetJob := jobs.NewRecordDailyTotalAssetValueJob(dailyAssetService)
+	// Start the daily asset job scheduler
+	dailyAssetScheduler := dailyAssetJob.Schedule()
+	defer dailyAssetScheduler.Stop()
+
 	// Get server URL from environment variable or use default
 	serverURL := os.Getenv("SERVER_URL")
 	if serverURL == "" {
