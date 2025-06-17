@@ -43,7 +43,7 @@ func (h *AccountHandler) ListAccounts(c *gin.Context) {
 	responses := []models.AccountResponse{}
 	for _, acc := range accounts {
 		balanceInDefaultCurrency := acc.Balance
-		if acc.Balance != 0 && acc.Currency != defaultCurrency {
+		if acc.Balance != 0 {
 			balanceInDefaultCurrency = acc.Balance / exchangeRates[acc.Currency]
 		}
 		responses = append(responses, models.AccountResponse{

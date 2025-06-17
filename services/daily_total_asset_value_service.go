@@ -114,18 +114,13 @@ func (s *DailyTotalAssetValueService) calculateTotalValue(holdings []models.Hold
 
 	for _, holding := range holdings {
 		holdingValue := holding.Quantity * holding.Price
-		if holding.Currency == targetCurrency {
-			totalValue += holdingValue
-		} else {
-			// Convert to target currency
-			rate, ok := rates[holding.Currency]
-			if !ok {
-				// If we don't have the exchange rate, log a warning and skip this holding
-				log.Printf("No exchange rate found for %s to %s", holding.Currency, targetCurrency)
-				continue
-			}
-			totalValue += holdingValue / rate
+		rate, ok := rates[holding.Currency]
+		if !ok {
+			// If we don't have the exchange rate, log a warning and skip this holding
+			log.Printf("No exchange rate found for %s to %s", holding.Currency, targetCurrency)
+			continue
 		}
+		totalValue += holdingValue / rate
 	}
 
 	return totalValue, nil

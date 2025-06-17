@@ -54,18 +54,6 @@ func (s *ExchangeRateService) FetchAndStoreRates() error {
 	var lastErr error
 
 	for _, baseCurrency := range s.supportedCurrencies {
-		// For each base currency, we'll compare against other base currencies
-		compareCurrencies := []string{}
-		for _, other := range s.supportedCurrencies {
-			if other != baseCurrency {
-				compareCurrencies = append(compareCurrencies, other)
-			}
-		}
-
-		if len(compareCurrencies) == 0 {
-			continue // Skip if no currencies to compare
-		}
-
 		url := fmt.Sprintf("https://open.er-api.com/v6/latest/%s", baseCurrency)
 		resp, err := http.Get(url)
 		if err != nil {
@@ -108,7 +96,7 @@ func (s *ExchangeRateService) FetchAndStoreRates() error {
 		}
 
 		// Store each currency pair
-		for _, currency := range compareCurrencies {
+		for _, currency := range s.supportedCurrencies {
 			rate, exists := apiResponse.Rates[currency]
 			if !exists {
 				log.Printf("Warning: No rate found for currency %s", currency)

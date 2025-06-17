@@ -140,7 +140,6 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		log.Printf("Error getting exchange rates: %v", err)
 		return nil, fmt.Errorf("failed to get exchange rates: %w", err)
 	}
-	log.Printf("Exchange rates: %v", rates)
 
 	// Convert map to slice and filter out zero quantity assets
 	assets := []models.Holding{}
@@ -156,12 +155,9 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 				asset.TotalValue = asset.Price * asset.Quantity
 			}
 			asset.TotalCost = asset.AverageCost * asset.Quantity
-			asset.TotalValueInDefaultCurrency = asset.TotalValue
 			asset.GainLoss = asset.TotalValue - asset.TotalCost
 			asset.GainLossPercentage = (asset.GainLoss / asset.TotalCost) * 100
-			if asset.Currency != defaultCurrency {
-				asset.TotalValueInDefaultCurrency = asset.TotalValue / rates[asset.Currency]
-			}
+			asset.TotalValueInDefaultCurrency = asset.TotalValue / rates[asset.Currency]
 			assets = append(assets, *asset)
 		}
 	}
