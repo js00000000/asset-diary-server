@@ -1338,31 +1338,84 @@
         "type": "object",
         "properties": {
           "ticker": {
-            "type": "string"
+            "type": "string",
+            "description": "Ticker symbol of the asset"
+          },
+          "tickerName": {
+            "type": "string",
+            "description": "Full name of the ticker/asset"
           },
           "quantity": {
-            "type": "number"
+            "type": "number",
+            "format": "float",
+            "description": "Number of units held"
           },
           "averagePrice": {
-            "type": "number"
+            "type": "number",
+            "format": "float",
+            "description": "Average purchase price per unit"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Current market price per unit (optional, not stored in DB)",
+            "readOnly": true
           },
           "assetType": {
             "type": "string",
             "enum": [
               "stock",
               "crypto"
-            ]
+            ],
+            "description": "Type of the asset"
           },
           "currency": {
-            "type": "string"
+            "type": "string",
+            "description": "Currency of the holding"
+          },
+          "totalCost": {
+            "type": "number",
+            "format": "float",
+            "description": "Total cost basis of the holding (quantity * averagePrice)",
+            "readOnly": true
+          },
+          "totalValue": {
+            "type": "number",
+            "format": "float",
+            "description": "Current total market value in the holding's currency",
+            "readOnly": true
+          },
+          "totalValueInDefaultCurrency": {
+            "type": "number",
+            "format": "float",
+            "description": "Current total market value converted to the user's default currency",
+            "readOnly": true
+          },
+          "gainLoss": {
+            "type": "number",
+            "format": "float",
+            "description": "Absolute gain/loss amount",
+            "readOnly": true
+          },
+          "gainLossPercentage": {
+            "type": "number",
+            "format": "float",
+            "description": "Percentage gain/loss relative to cost basis",
+            "readOnly": true
           }
         },
         "required": [
           "ticker",
+          "tickerName",
           "quantity",
           "averagePrice",
           "assetType",
-          "currency"
+          "currency",
+          "totalCost",
+          "totalValue",
+          "totalValueInDefaultCurrency",
+          "gainLoss",
+          "gainLossPercentage"
         ]
       }
     }

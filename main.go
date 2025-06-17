@@ -113,6 +113,18 @@ func main() {
 		c.Next()
 	})
 
+	// Initialize exchange rate service first since it's needed for holding service
+	supportedCurrencies := []string{"TWD", "USD"} // Default values
+	if currencies := os.Getenv("SUPPORTED_CURRENCIES"); currencies != "" {
+		supportedCurrencies = strings.Split(currencies, ",")
+	}
+
+	// Get server URL from environment variable or use default
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3000" // Default value
+	}
+
 	// Initialize repositories
 	profileRepo := repositories.NewProfileRepository(dbConn)
 	tradeRepo := repositories.NewTradeRepository(dbConn)
@@ -120,6 +132,8 @@ func main() {
 	authRepo := repositories.NewAuthRepository(dbConn)
 	userRepo := repositories.NewUserRepository(dbConn)
 	priceCacheRepo := repositories.NewPriceCacheRepository(dbConn)
+	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
+	userDailyTotalAssetValueRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
 
 	// Initialize services
 	authService := services.NewAuthService(authRepo)
@@ -132,46 +146,30 @@ func main() {
 	assetPriceService := services.NewAssetPriceService()
 	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
 	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
-	holdingService := services.NewHoldingService(tradeService, assetPriceServiceCacheDecorator)
-
-	// Load base currencies from environment variable (comma-separated)
-	supportedCurrencies := []string{"TWD", "USD"} // Default values
-	if currencies := os.Getenv("SUPPORTED_CURRENCIES"); currencies != "" {
-		supportedCurrencies = strings.Split(currencies, ",")
-	}
-
-	// Initialize exchange rate service and job
-	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
 	exchangeRateService := services.NewExchangeRateService(exchangeRateRepo, supportedCurrencies)
-	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService)
-	// Start the exchange rate job scheduler
-	exchangeRateScheduler := exchangeRateJob.Schedule()
-	defer exchangeRateScheduler.Stop()
-
-	// Initialize exchange rate handler
-	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
-
-	// Initialize daily asset service and job
-	dailyAssetRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
+	holdingService := services.NewHoldingService(
+		tradeService,
+		assetPriceServiceCacheDecorator,
+		profileService,
+		exchangeRateService,
+	)
 	dailyAssetService := services.NewDailyTotalAssetValueService(
-		dailyAssetRepo,
+		userDailyTotalAssetValueRepo,
 		holdingService,
 		exchangeRateService,
 		profileService,
 		userService,
 	)
+
+	// Initialize jobs
+	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService)
+	exchangeRateScheduler := exchangeRateJob.Schedule()
+	defer exchangeRateScheduler.Stop()
+
 	dailyAssetJob := jobs.NewRecordDailyTotalAssetValueJob(dailyAssetService)
-	// Start the daily asset job scheduler
 	dailyAssetScheduler := dailyAssetJob.Schedule()
 	defer dailyAssetScheduler.Stop()
 
-	// Get server URL from environment variable or use default
-	serverURL := os.Getenv("SERVER_URL")
-	if serverURL == "" {
-		serverURL = "http://localhost:3000" // Default value
-	}
-
-	// Initialize and start health check job
 	healthCheckJob := jobs.NewHealthCheckJob(serverURL)
 	healthCheckScheduler := healthCheckJob.Schedule()
 	defer healthCheckScheduler.Stop()
@@ -185,6 +183,7 @@ func main() {
 	assetPriceHandler := handlers.NewAssetPriceHandler(assetPriceServiceCacheDecorator)
 	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
 	healthCheckHandler := handlers.NewHealthCheckHandler()
+	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 
 	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler, exchangeRateHandler, healthCheckHandler)
 

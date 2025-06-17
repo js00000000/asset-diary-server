@@ -3,6 +3,7 @@ package services
 import (
 	"asset-diary/models"
 	"asset-diary/services/interfaces"
+	"fmt"
 	"log"
 )
 
@@ -11,8 +12,10 @@ type HoldingServiceInterface interface {
 }
 
 type HoldingService struct {
-	tradeService TradeServiceInterface
-	priceService interfaces.AssetPriceServiceInterface
+	tradeService    TradeServiceInterface
+	priceService    interfaces.AssetPriceServiceInterface
+	profileService  ProfileServiceInterface
+	exchangeService ExchangeRateServiceInterface
 }
 
 func (s *HoldingService) getCurrentPrice(ticker, assetType string) (*models.TickerInfo, error) {
@@ -33,10 +36,17 @@ type Lot struct {
 	RemainingQty float64
 }
 
-func NewHoldingService(tradeService TradeServiceInterface, priceService interfaces.AssetPriceServiceInterface) *HoldingService {
+func NewHoldingService(
+	tradeService TradeServiceInterface,
+	priceService interfaces.AssetPriceServiceInterface,
+	profileService ProfileServiceInterface,
+	exchangeService ExchangeRateServiceInterface,
+) *HoldingService {
 	return &HoldingService{
-		tradeService: tradeService,
-		priceService: priceService,
+		tradeService:    tradeService,
+		priceService:    priceService,
+		profileService:  profileService,
+		exchangeService: exchangeService,
 	}
 }
 
@@ -112,6 +122,26 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		}
 	}
 
+	// Get user's default currency from profile
+	profile, err := s.profileService.GetProfile(userID)
+	if err != nil {
+		log.Printf("Error getting user profile: %v", err)
+		return nil, fmt.Errorf("failed to get user profile: %w", err)
+	}
+
+	defaultCurrency := "USD" // Default fallback
+	if profile.InvestmentProfile != nil && profile.InvestmentProfile.DefaultCurrency != "" {
+		defaultCurrency = profile.InvestmentProfile.DefaultCurrency
+	}
+
+	// Get exchange rates for all involved currencies
+	rates, err := s.exchangeService.GetRatesByBaseCurrency(defaultCurrency)
+	if err != nil {
+		log.Printf("Error getting exchange rates: %v", err)
+		return nil, fmt.Errorf("failed to get exchange rates: %w", err)
+	}
+	log.Printf("Exchange rates: %v", rates)
+
 	// Convert map to slice and filter out zero quantity assets
 	assets := []models.Holding{}
 	for _, asset := range assetMap {
@@ -120,11 +150,17 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 			if err != nil {
 				log.Printf("Error fetching price for %s %s: %v", asset.AssetType, asset.Ticker, err)
 				asset.Price = 0
+				asset.TotalValue = 0
 			} else {
 				asset.Price = tickerInfo.Price
-				// TODO: handle currency conversion
-				// If the asset's currency is different from the price's currency, we might want to convert it
-				// For now, we'll just use the price as is and handle conversion in the frontend if needed
+				asset.TotalValue = asset.Price * asset.Quantity
+			}
+			asset.TotalCost = asset.AveragePrice * asset.Quantity
+			asset.TotalValueInDefaultCurrency = asset.TotalValue
+			asset.GainLoss = asset.TotalValue - asset.TotalCost
+			asset.GainLossPercentage = (asset.GainLoss / asset.TotalCost) * 100
+			if asset.Currency != defaultCurrency {
+				asset.TotalValueInDefaultCurrency = asset.TotalValue / rates[asset.Currency]
 			}
 			assets = append(assets, *asset)
 		}
