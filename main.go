@@ -114,7 +114,7 @@ func main() {
 	})
 
 	// Initialize exchange rate service first since it's needed for holding service
-	supportedCurrencies := []string{"TWD", "USD"} // Default values
+	supportedCurrencies := []string{"TWD", "USD", "USDT"} // Default values
 	if currencies := os.Getenv("SUPPORTED_CURRENCIES"); currencies != "" {
 		supportedCurrencies = strings.Split(currencies, ",")
 	}
