@@ -17,6 +17,7 @@ func SetupRoutes(router *gin.RouterGroup,
 	geminiTestHandler *handlers.GeminiTestHandler,
 	exchangeRateHandler *handlers.ExchangeRateHandler,
 	healthCheckHandler *handlers.HealthCheckHandler,
+	dailyTotalAssetValueHandler *handlers.DailyTotalAssetValueHandler,
 ) {
 	router.GET("/healthz", healthCheckHandler.HealthCheck)
 	public := router.Group("/auth")
@@ -67,5 +68,6 @@ func SetupRoutes(router *gin.RouterGroup,
 		protected.GET("/holdings", holdingHandler.ListHoldings)
 		protected.GET("/stock/price/:symbol", assetPriceHandler.GetStockPrice)
 		protected.GET("/crypto/price/:symbol", assetPriceHandler.GetCryptoPrice)
+		protected.GET("/daily-total-assets", dailyTotalAssetValueHandler.GetUserDailyTotalAssetValues)
 	}
 }

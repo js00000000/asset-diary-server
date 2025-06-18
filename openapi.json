@@ -12,7 +12,72 @@
     }
   ],
   "paths": {
-    "/api/exchange-rates/{base_currency}": {
+    "/daily-total-assets": {
+      "get": {
+        "summary": "Get user's daily total asset values",
+        "description": "Retrieves the daily total asset values for the authenticated user within the specified date range",
+        "tags": ["Assets"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date in YYYY-MM-DD format",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date in YYYY-MM-DD format (must be after or equal to start_date)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-12-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UserDailyTotalAssetValue"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date format or invalid date range"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/exchange-rates/{base_currency}": {
       "get": {
         "summary": "Get exchange rates by base currency",
         "description": "Get all exchange rates for a specific base currency",
@@ -816,6 +881,11 @@
         "bearerFormat": "JWT"
       }
     },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Unauthorized - Authentication token is missing or invalid"
+      }
+    },
     "schemas": {
       "ExchangeRatesResponse": {
         "type": "object",
@@ -1399,6 +1469,51 @@
           "gainLoss",
           "gainLossPercentage"
         ]
+      },
+      "UserDailyTotalAssetValue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the daily total asset record"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the user this record belongs to"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of the asset value record",
+            "example": "2025-01-01"
+          },
+          "totalValue": {
+            "type": "number",
+            "format": "double",
+            "description": "Total asset value in the specified currency",
+            "example": 10000.5
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "Currency code (ISO 4217)",
+            "example": "TWD"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the record was created"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the record was last updated"
+          }
+        },
+        "required": ["id", "userId", "date", "totalValue", "currency", "createdAt", "updatedAt"]
       }
     }
   }

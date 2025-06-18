@@ -184,8 +184,20 @@ func main() {
 	geminiTestHandler := handlers.NewGeminiTestHandler(geminiChatService, geminiAssetPriceService)
 	healthCheckHandler := handlers.NewHealthCheckHandler()
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
+	dailyTotalAssetValueHandler := handlers.NewDailyTotalAssetValueHandler(dailyAssetService)
 
-	routes.SetupRoutes(&app.RouterGroup, authHandler, profileHandler, accountHandler, tradeHandler, holdingHandler, assetPriceHandler, geminiTestHandler, exchangeRateHandler, healthCheckHandler)
+	routes.SetupRoutes(&app.RouterGroup,
+		authHandler,
+		profileHandler,
+		accountHandler,
+		tradeHandler,
+		holdingHandler,
+		assetPriceHandler,
+		geminiTestHandler,
+		exchangeRateHandler,
+		healthCheckHandler,
+		dailyTotalAssetValueHandler,
+	)
 
 	app.GET("/swagger/*any", ginSwaggerHandler())
 
