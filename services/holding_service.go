@@ -123,18 +123,12 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 	}
 
 	// Get user's default currency from profile
-	profile, err := s.profileService.GetProfile(userID)
+	defaultCurrency, err := s.profileService.GetDefaultCurrency(userID)
 	if err != nil {
 		log.Printf("Error getting user profile: %v", err)
 		return nil, fmt.Errorf("failed to get user profile: %w", err)
 	}
 
-	defaultCurrency := "USD" // Default fallback
-	if profile.InvestmentProfile != nil && profile.InvestmentProfile.DefaultCurrency != "" {
-		defaultCurrency = profile.InvestmentProfile.DefaultCurrency
-	}
-
-	// Get exchange rates for all involved currencies
 	rates, err := s.exchangeService.GetRatesByBaseCurrency(defaultCurrency)
 	if err != nil {
 		log.Printf("Error getting exchange rates: %v", err)
