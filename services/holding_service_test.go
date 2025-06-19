@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -116,6 +117,15 @@ func (m *MockPriceService) GetCryptoPrice(symbol string) (*models.TickerInfo, er
 }
 
 // byTicker implements sort.Interface for []models.Holding based on the Ticker field
+type testCase struct {
+	name           string
+	trades         []models.Trade
+	expectedAssets []models.Holding
+	expectedError  error
+	setupMocks     func(*MockPriceService)
+	profileMock    func(*MockProfileService)
+}
+
 type byTicker []models.Holding
 
 func (a byTicker) Len() int           { return len(a) }
@@ -123,19 +133,16 @@ func (a byTicker) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byTicker) Less(i, j int) bool { return a[i].Ticker < a[j].Ticker }
 
 func TestListHoldings(t *testing.T) {
-	tests := []struct {
-		name           string
-		trades         []models.Trade
-		expectedAssets []models.Holding
-		expectedError  error
-		setupMocks     func(*MockPriceService)
-	}{
+	tests := []testCase{
 		{
 			name:           "no trades should return empty list",
 			trades:         []models.Trade{},
 			expectedAssets: []models.Holding{},
 			expectedError:  nil,
 			setupMocks:     func(*MockPriceService) {},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 		{
 			name: "zero quantity holdings should not be included",
@@ -160,6 +167,9 @@ func TestListHoldings(t *testing.T) {
 			expectedAssets: []models.Holding{},
 			expectedError:  nil,
 			setupMocks:     func(*MockPriceService) {},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 		{
 			name: "multiple buys should calculate correct average price",
@@ -192,7 +202,12 @@ func TestListHoldings(t *testing.T) {
 				},
 			},
 			expectedError: nil,
-			setupMocks:    func(*MockPriceService) {},
+			setupMocks: func(ps *MockPriceService) {
+				ps.On("GetStockPrice", "AAPL").Return(&models.TickerInfo{Price: 100.0}, nil)
+			},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 		{
 			name: "sell should not affect average price of remaining shares",
@@ -233,7 +248,12 @@ func TestListHoldings(t *testing.T) {
 				},
 			},
 			expectedError: nil,
-			setupMocks:    func(*MockPriceService) {},
+			setupMocks: func(ps *MockPriceService) {
+				ps.On("GetStockPrice", "AAPL").Return(&models.TickerInfo{Price: 100.0}, nil)
+			},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 		{
 			name: "multiple assets should be handled correctly",
@@ -260,7 +280,11 @@ func TestListHoldings(t *testing.T) {
 				{Ticker: "BTC", Quantity: 1, AverageCost: 50000, Price: 200, AssetType: "crypto", Currency: "USD"},
 			},
 			expectedError: nil,
-			setupMocks:    func(*MockPriceService) {},
+			setupMocks: func(ps *MockPriceService) {
+				ps.On("GetStockPrice", "AAPL").Return(&models.TickerInfo{Price: 100.0}, nil)
+				ps.On("GetCryptoPrice", "BTC").Return(&models.TickerInfo{Price: 200.0}, nil)
+			},
+			profileMock: func(*MockProfileService) {},
 		},
 		{
 			name: "different currencies should be treated as different assets",
@@ -287,7 +311,12 @@ func TestListHoldings(t *testing.T) {
 				{Ticker: "AAPL", Quantity: 5, AverageCost: 80, Price: 100, AssetType: "stock", Currency: "EUR"},
 			},
 			expectedError: nil,
-			setupMocks:    func(*MockPriceService) {},
+			setupMocks: func(ps *MockPriceService) {
+				ps.On("GetStockPrice", "AAPL").Return(&models.TickerInfo{Price: 100.0}, nil)
+			},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 		{
 			name: "price service returns error",
@@ -306,39 +335,96 @@ func TestListHoldings(t *testing.T) {
 			setupMocks: func(ps *MockPriceService) {
 				ps.On("GetStockPrice", "AAPL").Return((*models.TickerInfo)(nil), fmt.Errorf("price service error"))
 			},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
+		},
+		{
+			name: "sell all and buy back should use new cost basis",
+			trades: []models.Trade{
+				{
+					Type:      "buy",
+					AssetType: "stock",
+					Ticker:    "CRCL",
+					Quantity:  8,
+					Price:     96.57,
+					Currency:  "USD",
+					TradeDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					Type:      "sell",
+					AssetType: "stock",
+					Ticker:    "CRCL",
+					Quantity:  8,
+					Price:     120.00,
+					Currency:  "USD",
+					TradeDate: time.Date(2025, 6, 2, 0, 0, 0, 0, time.UTC),
+				},
+				{
+					Type:      "buy",
+					AssetType: "stock",
+					Ticker:    "CRCL",
+					Quantity:  3,
+					Price:     155.00,
+					Currency:  "USD",
+					TradeDate: time.Date(2025, 6, 3, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			expectedAssets: []models.Holding{
+				{
+					Ticker:      "CRCL",
+					TickerName:  "",
+					AssetType:   "stock",
+					Quantity:    3,
+					AverageCost: 155.00,
+					Price:       100,
+					Currency:    "USD",
+				},
+			},
+			expectedError: nil,
+			setupMocks: func(ps *MockPriceService) {
+				ps.On("GetStockPrice", "CRCL").Return(&models.TickerInfo{Price: 100.0}, nil)
+			},
+			profileMock: func(ps *MockProfileService) {
+				ps.On("GetDefaultCurrency", "user1").Return("USD", nil)
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup mock
+			// Setup mocks
 			mockTradeService := new(MockTradeService)
 			mockTradeService.On("ListTrades", "user1").Return(tt.trades, tt.expectedError)
 
 			priceService := new(MockPriceService)
-			// Set up mock responses for price service based on test case
-			for _, trade := range tt.trades {
-				switch trade.AssetType {
-				case "stock":
-					if tt.expectedError == nil {
-						priceService.On("GetStockPrice", trade.Ticker).Return(&models.TickerInfo{Price: 100.0}, nil)
-					}
-				case "crypto":
-					if tt.expectedError == nil {
-						priceService.On("GetCryptoPrice", trade.Ticker).Return(&models.TickerInfo{Price: 200.0}, nil)
-					}
-				}
-			}
-			// Run any test-specific mock setup
-			tt.setupMocks(priceService)
-
-			// Set up mock profile service
 			mockProfileService := new(MockProfileService)
+
+			// Set default mocks that are needed for all tests
+			mockProfileService.On("GetDefaultCurrency", "user1").Return("USD", nil)
 			mockProfileService.On("GetProfile", "user1").Return(&models.Profile{
 				InvestmentProfile: &models.InvestmentProfile{
 					DefaultCurrency: "USD",
 				},
 			}, nil)
+
+			// Set up test-specific mocks
+			for _, trade := range tt.trades {
+				switch trade.AssetType {
+				case "stock":
+					priceService.On("GetStockPrice", trade.Ticker).Return(&models.TickerInfo{Price: 100.0}, nil)
+				case "crypto":
+					priceService.On("GetCryptoPrice", trade.Ticker).Return(&models.TickerInfo{Price: 200.0}, nil)
+				}
+			}
+
+			// Allow test cases to override any mocks
+			if tt.setupMocks != nil {
+				tt.setupMocks(priceService)
+			}
+			if tt.profileMock != nil {
+				tt.profileMock(mockProfileService)
+			}
 
 			// Set up mock exchange rate service
 			mockExchangeService := new(MockExchangeRateService)

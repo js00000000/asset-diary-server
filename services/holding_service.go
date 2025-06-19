@@ -5,6 +5,7 @@ import (
 	"asset-diary/services/interfaces"
 	"fmt"
 	"log"
+	"sort"
 )
 
 type HoldingServiceInterface interface {
@@ -29,13 +30,6 @@ func (s *HoldingService) getCurrentPrice(ticker, assetType string) (*models.Tick
 	}
 }
 
-// Lot represents a batch of shares bought at a specific price
-type Lot struct {
-	Quantity     float64
-	Price        float64
-	RemainingQty float64
-}
-
 func NewHoldingService(
 	tradeService TradeServiceInterface,
 	priceService interfaces.AssetPriceServiceInterface,
@@ -56,70 +50,9 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		return nil, err
 	}
 
-	// Map to track assets by ticker and currency
-	assetMap := make(map[string]*models.Holding)
-	// Map to track lots for each asset
-	lotsMap := make(map[string][]*Lot)
-
-	for _, trade := range trades {
-		key := trade.Ticker + "_" + trade.Currency
-		asset, exists := assetMap[key]
-		if !exists {
-			asset = &models.Holding{
-				Ticker:     trade.Ticker,
-				TickerName: trade.TickerName,
-				AssetType:  trade.AssetType,
-				Currency:   trade.Currency,
-			}
-			assetMap[key] = asset
-			lotsMap[key] = []*Lot{}
-		}
-
-		if trade.Type == "buy" {
-			// Add new lot for buy
-			lot := &Lot{
-				Quantity:     trade.Quantity,
-				Price:        trade.Price,
-				RemainingQty: trade.Quantity,
-			}
-			lotsMap[key] = append(lotsMap[key], lot)
-			asset.Quantity += trade.Quantity
-		} else if trade.Type == "sell" {
-			// Implement FIFO for sells
-			remainingSellQty := trade.Quantity
-			for _, lot := range lotsMap[key] {
-				if remainingSellQty <= 0 {
-					break
-				}
-				if lot.RemainingQty > 0 {
-					if lot.RemainingQty >= remainingSellQty {
-						lot.RemainingQty -= remainingSellQty
-						remainingSellQty = 0
-					} else {
-						remainingSellQty -= lot.RemainingQty
-						lot.RemainingQty = 0
-					}
-				}
-			}
-			asset.Quantity -= trade.Quantity
-		}
-	}
-
-	// Calculate average price based on remaining lots
-	for key, asset := range assetMap {
-		if asset.Quantity > 0 {
-			var totalCost float64
-			var totalRemainingQty float64
-			for _, lot := range lotsMap[key] {
-				if lot.RemainingQty > 0 {
-					totalCost += lot.Price * lot.RemainingQty
-					totalRemainingQty += lot.RemainingQty
-				}
-			}
-			if totalRemainingQty > 0 {
-				asset.AverageCost = totalCost / totalRemainingQty
-			}
-		}
+	assetMap, err := calculateHoldings(trades)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get user's default currency from profile
@@ -157,4 +90,88 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 	}
 
 	return assets, nil
+}
+
+func calculateHoldings(trades []models.Trade) (map[string]*models.Holding, error) {
+	type fifoBuyTrade struct {
+		Quantity float64
+		Price    float64
+		TradeID  string
+	}
+
+	sort.Slice(trades, func(i, j int) bool {
+		return trades[i].TradeDate.Before(trades[j].TradeDate)
+	})
+
+	buyQueues := make(map[string][]fifoBuyTrade)
+
+	currentHoldings := make(map[string]*models.Holding)
+
+	for _, trade := range trades {
+		key := fmt.Sprintf("%s_%s_%s", trade.AssetType, trade.Ticker, trade.Currency)
+
+		if _, ok := currentHoldings[key]; !ok {
+			currentHoldings[key] = &models.Holding{
+				Ticker:     trade.Ticker,
+				TickerName: trade.TickerName,
+				AssetType:  trade.AssetType,
+				Currency:   trade.Currency,
+			}
+		}
+
+		holding := currentHoldings[key]
+
+		switch trade.Type {
+		case "buy":
+			buyQueues[key] = append(buyQueues[key], fifoBuyTrade{
+				Quantity: trade.Quantity,
+				Price:    trade.Price,
+				TradeID:  trade.ID,
+			})
+
+			holding.TotalCost += trade.Quantity * trade.Price
+			holding.Quantity += trade.Quantity
+
+		case "sell":
+			sellQuantity := trade.Quantity
+
+			if holding.Quantity < sellQuantity {
+				return nil, fmt.Errorf("holding %s sell quantity %.2f exceeds holding quantity %.2f, trade ID: %s", key, sellQuantity, holding.Quantity, trade.ID)
+			}
+
+			for sellQuantity > 0 && len(buyQueues[key]) > 0 {
+				oldestBuy := &buyQueues[key][0]
+
+				if oldestBuy.Quantity <= sellQuantity {
+					holding.TotalCost -= oldestBuy.Quantity * oldestBuy.Price
+					holding.Quantity -= oldestBuy.Quantity
+					sellQuantity -= oldestBuy.Quantity
+					buyQueues[key] = buyQueues[key][1:] // remove the oldest buy record
+				} else {
+					holding.TotalCost -= sellQuantity * oldestBuy.Price
+					holding.Quantity -= sellQuantity
+					oldestBuy.Quantity -= sellQuantity
+					sellQuantity = 0
+				}
+			}
+		}
+
+		if holding.Quantity > 0 {
+			holding.AverageCost = holding.TotalCost / holding.Quantity
+		} else {
+			holding.AverageCost = 0
+			holding.TotalCost = 0
+		}
+
+		currentHoldings[key] = holding
+	}
+
+	finalHoldings := make(map[string]*models.Holding)
+	for key, h := range currentHoldings {
+		if h.Quantity > 0 {
+			finalHoldings[key] = h
+		}
+	}
+
+	return finalHoldings, nil
 }
