@@ -70,9 +70,8 @@ func (j *HealthCheckJob) Schedule() *cron.Cron {
 	log.Println("Running initial health check...")
 	go j.Run()
 
-	// Start the cron scheduler
 	c.Start()
-	log.Println("Health check scheduler started")
+	log.Println("Health check job started")
 
 	return c
 }

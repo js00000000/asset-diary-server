@@ -40,5 +40,8 @@ func (j *RecordDailyTotalAssetValueJob) Schedule() *cron.Cron {
 		log.Fatalf("Failed to schedule daily asset job: %v", err)
 	}
 
+	c.Start()
+	log.Println("Daily asset job started")
+
 	return c
 }

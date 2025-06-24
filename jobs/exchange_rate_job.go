@@ -37,5 +37,8 @@ func (j *ExchangeRateJob) Schedule() *cron.Cron {
 	// Run once immediately on startup
 	go j.Run()
 
+	c.Start()
+	log.Println("Exchange rate job started")
+
 	return c
 }
