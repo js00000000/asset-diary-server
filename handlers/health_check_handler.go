@@ -20,7 +20,7 @@ func NewHealthCheckHandler() *HealthCheckHandler {
 // @Tags health
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /healthz [get]
+// @Router /api/healthz [get]
 func (h *HealthCheckHandler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "ok",

@@ -23,7 +23,7 @@ func NewHealthCheckJob(serverURL string) *HealthCheckJob {
 }
 
 func (j *HealthCheckJob) Run() {
-	url := j.serverURL + "/healthz"
+	url := j.serverURL + "/api/healthz"
 	log.Printf("Performing health check: %s", url)
 
 	// Create a new HTTP client with a timeout
