@@ -186,7 +186,7 @@ func main() {
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 	dailyTotalAssetValueHandler := handlers.NewDailyTotalAssetValueHandler(dailyAssetService)
 
-	routes.SetupRoutes(&app.RouterGroup,
+	routes.SetupRoutes(app.Group("/api"),
 		authHandler,
 		profileHandler,
 		accountHandler,
