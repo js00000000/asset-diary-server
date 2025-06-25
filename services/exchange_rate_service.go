@@ -117,8 +117,6 @@ func (s *ExchangeRateService) FetchAndStoreRates() error {
 			}
 
 			successCount++
-			log.Printf("Successfully updated exchange rate for %s/%s at %s\n",
-				baseCurrency, currency, lastUpdated.Format(time.RFC3339))
 		}
 
 		totalSuccessCount += successCount

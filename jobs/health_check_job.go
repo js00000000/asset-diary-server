@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -9,20 +10,22 @@ import (
 )
 
 type HealthCheckJob struct {
-	serverURL string
+	serverURL          string
+	dailyAssetValueJob *RecordDailyTotalAssetValueJob
 }
 
-func NewHealthCheckJob(serverURL string) *HealthCheckJob {
+func NewHealthCheckJob(serverURL string, dailyAssetValueJob *RecordDailyTotalAssetValueJob) *HealthCheckJob {
 	// Ensure the server URL doesn't end with a slash
 	if len(serverURL) > 0 && serverURL[len(serverURL)-1] == '/' {
 		serverURL = serverURL[:len(serverURL)-1]
 	}
 	return &HealthCheckJob{
-		serverURL: serverURL,
+		serverURL:          serverURL,
+		dailyAssetValueJob: dailyAssetValueJob,
 	}
 }
 
-func (j *HealthCheckJob) Run() {
+func (j *HealthCheckJob) run() {
 	url := j.serverURL + "/api/healthz"
 	log.Printf("Performing health check: %s", url)
 
@@ -49,29 +52,28 @@ func (j *HealthCheckJob) Run() {
 	}
 }
 
-func (j *HealthCheckJob) Schedule() *cron.Cron {
+func (j *HealthCheckJob) Schedule() (*cron.Cron, error) {
 	// Create a new cron instance with seconds precision
 	c := cron.New(cron.WithSeconds())
 
 	// Schedule to run every 10 minutes
-	schedule := "0 */10 * * * *" // Every 10 minutes
-	_, err := c.AddFunc(schedule, func() {
-		log.Println("Scheduled health check starting...")
-		j.Run()
-	})
+	_, err := c.AddFunc("0 */10 * * * *", j.run)
 
 	if err != nil {
-		log.Fatalf("Failed to schedule health check job: %v", err)
+		return nil, fmt.Errorf("failed to schedule health check job: %v", err)
 	}
-
-	log.Printf("Health check job scheduled to run every 10 minutes")
 
 	// Run once immediately on startup
 	log.Println("Running initial health check...")
-	go j.Run()
+	go j.run()
 
 	c.Start()
-	log.Println("Health check job started")
+	log.Println("Scheduled health check job started")
 
-	return c
+	return c, nil
+}
+
+func (j *HealthCheckJob) Stop(c *cron.Cron) {
+	c.Stop()
+	log.Println("Scheduled health check job stopped")
 }

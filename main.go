@@ -162,17 +162,26 @@ func main() {
 	)
 
 	// Initialize jobs
-	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService)
-	exchangeRateScheduler := exchangeRateJob.Schedule()
-	defer exchangeRateScheduler.Stop()
-
 	dailyAssetJob := jobs.NewRecordDailyTotalAssetValueJob(dailyAssetService)
-	dailyAssetScheduler := dailyAssetJob.Schedule()
-	defer dailyAssetScheduler.Stop()
+	dailyAssetScheduler, err := dailyAssetJob.Schedule()
+	if err != nil {
+		log.Fatalf("Failed to schedule daily asset job: %v", err)
+	}
+	defer dailyAssetJob.Stop(dailyAssetScheduler)
 
-	healthCheckJob := jobs.NewHealthCheckJob(serverURL)
-	healthCheckScheduler := healthCheckJob.Schedule()
-	defer healthCheckScheduler.Stop()
+	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService, dailyAssetJob)
+	exchangeRateScheduler, err := exchangeRateJob.Schedule()
+	if err != nil {
+		log.Fatalf("Failed to schedule exchange rate job: %v", err)
+	}
+	defer exchangeRateJob.Stop(exchangeRateScheduler)
+
+	healthCheckJob := jobs.NewHealthCheckJob(serverURL, dailyAssetJob)
+	healthCheckScheduler, err := healthCheckJob.Schedule()
+	if err != nil {
+		log.Fatalf("Failed to schedule health check job: %v", err)
+	}
+	defer healthCheckJob.Stop(healthCheckScheduler)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)

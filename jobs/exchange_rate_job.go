@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -10,35 +11,45 @@ import (
 )
 
 type ExchangeRateJob struct {
-	service services.ExchangeRateServiceInterface
+	service            services.ExchangeRateServiceInterface
+	dailyAssetValueJob *RecordDailyTotalAssetValueJob
 }
 
-func NewExchangeRateJob(service services.ExchangeRateServiceInterface) *ExchangeRateJob {
-	return &ExchangeRateJob{service: service}
+func NewExchangeRateJob(service services.ExchangeRateServiceInterface, dailyAssetValueJob *RecordDailyTotalAssetValueJob) *ExchangeRateJob {
+	return &ExchangeRateJob{
+		service:            service,
+		dailyAssetValueJob: dailyAssetValueJob,
+	}
 }
 
-func (j *ExchangeRateJob) Run() {
-	log.Println("Starting exchange rate update job...")
+func (j *ExchangeRateJob) run() {
+	log.Println("Scheduled exchange rate update starting...")
 	if err := j.service.FetchAndStoreRates(); err != nil {
 		log.Printf("Error updating exchange rates: %v\n", err)
 	} else {
-		log.Println("Exchange rate update completed successfully")
+		log.Println("Scheduled exchange rate update completed successfully")
 	}
 }
 
-func (j *ExchangeRateJob) Schedule() *cron.Cron {
+func (j *ExchangeRateJob) Schedule() (*cron.Cron, error) {
 	// Run daily at 00:05 UTC (08:05 CST)
 	c := cron.New(cron.WithLocation(time.UTC))
-	_, err := c.AddFunc("8 0 * * *", j.Run)
+	_, err := c.AddFunc("5 0 * * *", j.run)
 	if err != nil {
-		log.Fatalf("Failed to schedule exchange rate job: %v", err)
+		return nil, fmt.Errorf("failed to schedule exchange rate job: %v", err)
 	}
 
 	// Run once immediately on startup
-	go j.Run()
+	log.Println("Running initial exchange rate update...")
+	go j.run()
 
 	c.Start()
-	log.Println("Exchange rate job started")
+	log.Println("Scheduled exchange rate job started")
 
-	return c
+	return c, nil
+}
+
+func (j *ExchangeRateJob) Stop(c *cron.Cron) {
+	c.Stop()
+	log.Println("Scheduled exchange rate job stopped")
 }

@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -10,38 +11,45 @@ import (
 )
 
 type RecordDailyTotalAssetValueJob struct {
-	service services.DailyTotalAssetValueServiceInterface
+	service   services.DailyTotalAssetValueServiceInterface
+	scheduled bool
 }
 
 func NewRecordDailyTotalAssetValueJob(service services.DailyTotalAssetValueServiceInterface) *RecordDailyTotalAssetValueJob {
-	return &RecordDailyTotalAssetValueJob{service: service}
+	return &RecordDailyTotalAssetValueJob{
+		service: service,
+	}
 }
 
-func (j *RecordDailyTotalAssetValueJob) Run() {
-	log.Println("Starting daily asset recording job...")
+func (j *RecordDailyTotalAssetValueJob) run() {
+	log.Println("Scheduled daily asset recording job starting...")
 	if err := j.service.RecordDailyTotalAssetValue(); err != nil {
-		log.Printf("Error recording daily assets: %v\n", err)
+		log.Printf("Error recording daily assets: %v", err)
 	} else {
-		log.Println("Daily asset recording completed successfully")
+		log.Println("Scheduled daily asset recording completed successfully")
 	}
 }
 
-// The job will run daily at 5:00 AM in Asia/Taipei (UTC+8) timezone
-func (j *RecordDailyTotalAssetValueJob) Schedule() *cron.Cron {
-	tz, err := time.LoadLocation("Asia/Taipei")
-	if err != nil {
-		log.Fatalf("Failed to load timezone: %v", err)
+// The job will run daily at 22:05 UTC (06:05 CST)
+func (j *RecordDailyTotalAssetValueJob) Schedule() (*cron.Cron, error) {
+	if j.scheduled {
+		return nil, fmt.Errorf("job already scheduled")
 	}
 
-	c := cron.New(cron.WithLocation(tz))
-
-	_, err = c.AddFunc("0 5 * * *", j.Run)
+	c := cron.New(cron.WithLocation(time.UTC))
+	_, err := c.AddFunc("5 22 * * *", j.run)
 	if err != nil {
-		log.Fatalf("Failed to schedule daily asset job: %v", err)
+		return nil, fmt.Errorf("failed to schedule daily asset job: %v", err)
 	}
 
+	j.scheduled = true
 	c.Start()
-	log.Println("Daily asset job started")
+	log.Println("Scheduled daily asset job started")
 
-	return c
+	return c, nil
+}
+
+func (j *RecordDailyTotalAssetValueJob) Stop(c *cron.Cron) {
+	c.Stop()
+	log.Println("Scheduled daily asset job stopped")
 }
