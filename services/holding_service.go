@@ -26,7 +26,7 @@ func (s *HoldingService) getCurrentPrice(ticker, assetType string) (*models.Tick
 	case "crypto":
 		return s.priceService.GetCryptoPrice(ticker)
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("invalid asset type: %s", assetType)
 	}
 }
 
