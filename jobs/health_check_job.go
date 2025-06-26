@@ -53,7 +53,6 @@ func (j *HealthCheckJob) run() {
 }
 
 func (j *HealthCheckJob) Schedule() (*cron.Cron, error) {
-	// Create a new cron instance with seconds precision
 	c := cron.New(cron.WithSeconds())
 
 	// Schedule to run every 10 minutes
@@ -63,7 +62,6 @@ func (j *HealthCheckJob) Schedule() (*cron.Cron, error) {
 		return nil, fmt.Errorf("failed to schedule health check job: %v", err)
 	}
 
-	// Run once immediately on startup
 	log.Println("Running initial health check...")
 	go j.run()
 

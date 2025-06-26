@@ -11,8 +11,7 @@ import (
 )
 
 type RecordDailyTotalAssetValueJob struct {
-	service   services.DailyTotalAssetValueServiceInterface
-	scheduled bool
+	service services.DailyTotalAssetValueServiceInterface
 }
 
 func NewRecordDailyTotalAssetValueJob(service services.DailyTotalAssetValueServiceInterface) *RecordDailyTotalAssetValueJob {
@@ -32,17 +31,12 @@ func (j *RecordDailyTotalAssetValueJob) run() {
 
 // The job will run daily at 22:05 UTC (06:05 CST)
 func (j *RecordDailyTotalAssetValueJob) Schedule() (*cron.Cron, error) {
-	if j.scheduled {
-		return nil, fmt.Errorf("job already scheduled")
-	}
-
 	c := cron.New(cron.WithLocation(time.UTC))
 	_, err := c.AddFunc("5 22 * * *", j.run)
 	if err != nil {
 		return nil, fmt.Errorf("failed to schedule daily asset job: %v", err)
 	}
 
-	j.scheduled = true
 	c.Start()
 	log.Println("Scheduled daily asset job started")
 
