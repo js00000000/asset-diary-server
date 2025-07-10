@@ -55,8 +55,8 @@ func (j *HealthCheckJob) run() {
 func (j *HealthCheckJob) Schedule() (*cron.Cron, error) {
 	c := cron.New(cron.WithSeconds())
 
-	// Schedule to run every 10 minutes
-	_, err := c.AddFunc("0 */10 * * * *", j.run)
+	// Schedule to run every 1 minutes
+	_, err := c.AddFunc("0 */1 * * * *", j.run)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to schedule health check job: %v", err)
