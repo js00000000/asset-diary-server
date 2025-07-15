@@ -71,7 +71,7 @@ server/
    ```
 
 ### Usage
-- The API will be available at `http://localhost:8080` by default.
+- The API will be available at `http://localhost:3000` by default.
 - Use tools like Postman or curl to interact with the endpoints.
 - See `openapi.json` for the full API specification.
 
@@ -79,27 +79,43 @@ server/
 ## API Endpoints
 
 ### Auth
-- `POST /auth/sign-in` — User login
-- `POST /auth/sign-up` — User registration
-- `POST /auth/refresh` — Refresh JWT
-- `POST /auth/logout` — Logout (JWT required)
+- `POST /api/auth/sign-in` — User login
+- `POST /api/auth/sign-up` — User registration
+- `POST /api/auth/refresh` — Refresh JWT
+- `POST /api/auth/logout` — Logout (JWT required)
 
 ### Profile
-- `GET /profile` — Get user profile (JWT required)
-- `PUT /profile` — Update user profile (JWT required)
-- `POST /profile/change-password` — Change password (JWT required)
+- `GET /api/profile` — Get user profile (JWT required)
+- `PUT /api/profile` — Update user profile (JWT required)
+- `POST /api/profile/change-password` — Change password (JWT required)
+
+### Environment Variables
+
+- `DATABASE_URL` - PostgreSQL connection string (e.g., `postgres://user:pass@localhost:5432/dbname`)
+- `JWT_SECRET` - Secret key for JWT signing
+- `JWT_EXPIRATION` - JWT expiration time (e.g., `24h`)
+- `PORT` - Port to run the server on (default: `8080`)
+- `CRON_API_KEY` - API key required for accessing the cron endpoints
 
 ### Accounts
-- `GET /accounts` — List accounts (JWT required)
-- `POST /accounts` — Create account (JWT required)
-- `PUT /accounts/:id` — Update account (JWT required)
-- `DELETE /accounts/:id` — Delete account (JWT required)
+- `GET /api/accounts` — List accounts (JWT required)
+- `POST /api/accounts` — Create account (JWT required)
+- `PUT /api/accounts/:id` — Update account (JWT required)
+- `DELETE /api/accounts/:id` — Delete account (JWT required)
 
 ### Trades
-- `GET /trades` — List trades (JWT required)
-- `POST /trades` — Create trade (JWT required)
-- `PUT /trades/:id` — Update trade (JWT required)
-- `DELETE /trades/:id` — Delete trade (JWT required)
+- `GET /api/trades` — List trades (JWT required)
+- `POST /api/trades` — Create trade (JWT required)
+- `PUT /api/trades/:id` — Update trade (JWT required)
+- `DELETE /api/trades/:id` — Delete trade (JWT required)
+
+### Holdings
+- `GET /api/holdings` — List holdings (JWT required)
+
+### Cron Endpoints
+These endpoints are protected by API key authentication (X-API-Key header).
+- `POST /api/cron/update-exchange-rates` — Updates all exchange rates from the external API
+- `POST /api/cron/record-daily-assets-value` — Records the current total asset values for all users
 
 ## Development
 - Code is organized by feature (handlers, models, db)

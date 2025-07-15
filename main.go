@@ -9,7 +9,6 @@ import (
 
 	"asset-diary/db"
 	"asset-diary/handlers"
-	"asset-diary/jobs"
 	"asset-diary/repositories"
 	"asset-diary/routes"
 	"asset-diary/services"
@@ -161,29 +160,8 @@ func main() {
 		userService,
 	)
 
-	// Initialize jobs
-	dailyAssetJob := jobs.NewRecordDailyTotalAssetValueJob(dailyAssetService)
-	dailyAssetScheduler, err := dailyAssetJob.Schedule()
-	if err != nil {
-		log.Fatalf("Failed to schedule daily asset job: %v", err)
-	}
-	defer dailyAssetJob.Stop(dailyAssetScheduler)
-
-	exchangeRateJob := jobs.NewExchangeRateJob(exchangeRateService, dailyAssetJob)
-	exchangeRateScheduler, err := exchangeRateJob.Schedule()
-	if err != nil {
-		log.Fatalf("Failed to schedule exchange rate job: %v", err)
-	}
-	defer exchangeRateJob.Stop(exchangeRateScheduler)
-
-	healthCheckJob := jobs.NewHealthCheckJob(serverURL, dailyAssetJob)
-	healthCheckScheduler, err := healthCheckJob.Schedule()
-	if err != nil {
-		log.Fatalf("Failed to schedule health check job: %v", err)
-	}
-	defer healthCheckJob.Stop(healthCheckScheduler)
-
 	// Initialize handlers
+	cronHandler := handlers.NewCronHandler(exchangeRateService, dailyAssetService)
 	authHandler := handlers.NewAuthHandler(authService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
 	accountHandler := handlers.NewAccountHandler(accountService, exchangeRateService, profileService)
@@ -195,6 +173,7 @@ func main() {
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 	dailyTotalAssetValueHandler := handlers.NewDailyTotalAssetValueHandler(dailyAssetService)
 
+	// Set up routes with all handlers
 	routes.SetupRoutes(app.Group("/api"),
 		authHandler,
 		profileHandler,
@@ -206,6 +185,7 @@ func main() {
 		exchangeRateHandler,
 		healthCheckHandler,
 		dailyTotalAssetValueHandler,
+		cronHandler,
 	)
 
 	app.GET("/swagger/*any", ginSwaggerHandler())

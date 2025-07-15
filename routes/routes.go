@@ -18,6 +18,7 @@ func SetupRoutes(router *gin.RouterGroup,
 	exchangeRateHandler *handlers.ExchangeRateHandler,
 	healthCheckHandler *handlers.HealthCheckHandler,
 	dailyTotalAssetValueHandler *handlers.DailyTotalAssetValueHandler,
+	cronHandler *handlers.CronHandler,
 ) {
 	router.GET("/healthz", healthCheckHandler.HealthCheck)
 	public := router.Group("/auth")
@@ -36,6 +37,14 @@ func SetupRoutes(router *gin.RouterGroup,
 	exchangeRates := router.Group("/exchange-rates")
 	{
 		exchangeRates.GET("/:base_currency", exchangeRateHandler.GetRatesByBaseCurrency)
+	}
+
+	// Cron endpoints with API key auth
+	cronGroup := router.Group("/cron")
+	cronGroup.Use(middleware.APIKeyAuthMiddleware())
+	{
+		cronGroup.POST("/update-exchange-rates", cronHandler.UpdateExchangeRates)
+		cronGroup.POST("/record-daily-assets-value", cronHandler.RecordDailyAssets)
 	}
 
 	protected := router.Group("/")
