@@ -155,6 +155,7 @@ func main() {
 	dailyAssetService := services.NewDailyTotalAssetValueService(
 		userDailyTotalAssetValueRepo,
 		holdingService,
+		accountService,
 		exchangeRateService,
 		profileService,
 		userService,
