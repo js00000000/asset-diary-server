@@ -251,6 +251,61 @@
           }
         }
       ]
+    },
+    {
+      "name": "Cron Jobs",
+      "item": [
+        {
+          "name": "Update Exchange Rates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{cronApiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/cron/update-exchange-rates",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "cron", "update-exchange-rates"]
+            },
+            "description": "Triggers an update of all exchange rates from the external API. Requires API key authentication."
+          }
+        },
+        {
+          "name": "Record Daily Assets Value",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{cronApiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/cron/record-daily-assets-value",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "cron", "record-daily-assets-value"]
+            },
+            "description": "Records the current total asset values for all users. Requires API key authentication."
+          }
+        }
+      ]
     }
   ],
   "auth": {
@@ -275,6 +330,11 @@
     {
       "key": "refreshToken",
       "value": ""
+    },
+    {
+      "key": "cronApiKey",
+      "value": "your_cron_api_key_here",
+      "description": "API key for accessing cron endpoints"
     }
   ],
   "event": [
