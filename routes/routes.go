@@ -29,6 +29,7 @@ func SetupRoutes(router *gin.RouterGroup,
 		public.POST("/logout", authHandler.Logout)
 		public.POST("/forgot-password", authHandler.ForgotPassword)
 		public.POST("/verify-reset-code", authHandler.VerifyResetCode)
+		public.POST("/google", authHandler.GoogleLogin)
 	}
 
 	geminiTestHandler.RegisterRoutes(router.Group(""))

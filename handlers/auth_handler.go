@@ -168,13 +168,19 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req models.ForgotPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInvalidRequest,
+			err.Error(),
+		))
 		return
 	}
 
 	err := h.authService.ForgotPassword(req.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
 		return
 	}
 
@@ -184,15 +190,57 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 func (h *AuthHandler) VerifyResetCode(c *gin.Context) {
 	var req models.VerifyCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInvalidRequest,
+			err.Error(),
+		))
 		return
 	}
 
 	err := h.authService.VerifyResetCode(req.Email, req.Code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
 		return
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+type GoogleLoginRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+// AuthResponse 定義與前端 auth-api 一致的響應結構
+type AuthResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInvalidRequest,
+			err.Error(),
+		))
+		return
+	}
+
+	response, err := h.authService.GoogleLogin(req.Token)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "invalid Google token" {
+			status = http.StatusUnauthorized
+		}
+		c.JSON(status, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }

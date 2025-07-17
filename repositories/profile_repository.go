@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"log"
 
 	"asset-diary/models"
@@ -75,8 +76,13 @@ func (r *ProfileRepository) ChangePassword(userID string, currentPassword, newPa
 		return result.Error
 	}
 
+	// Check if user has a password set
+	if user.Password_Hash == nil {
+		return fmt.Errorf("no password set for this account")
+	}
+
 	// Check current password
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password_Hash), []byte(currentPassword))
+	err := bcrypt.CompareHashAndPassword([]byte(*user.Password_Hash), []byte(currentPassword))
 	if err != nil {
 		return err
 	}
@@ -88,7 +94,8 @@ func (r *ProfileRepository) ChangePassword(userID string, currentPassword, newPa
 	}
 
 	// Update password
-	user.Password_Hash = string(hashedPassword)
+	hashedStr := string(hashedPassword)
+	user.Password_Hash = &hashedStr
 	result = r.db.Save(&user)
 	if result.Error != nil {
 		log.Println("Failed to update password:", result.Error)

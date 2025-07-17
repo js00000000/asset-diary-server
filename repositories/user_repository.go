@@ -10,6 +10,7 @@ import (
 type UserRepositoryInterface interface {
 	DeleteUser(userID string) error
 	ListAllUserIDs() ([]string, error)
+	FindUserByEmail(email string) (*models.User, error)
 }
 
 // UserRepository 實作了 UserRepositoryInterface
@@ -43,4 +44,17 @@ func (r *UserRepository) ListAllUserIDs() ([]string, error) {
 	}
 
 	return userIDs, nil
+}
+
+// FindUserByEmail 根據電子郵件查找用戶
+func (r *UserRepository) FindUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	result := r.db.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return &user, nil
 }

@@ -4,6 +4,7 @@ import (
 	"asset-diary/models"
 	"asset-diary/repositories"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -19,7 +20,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 	"gopkg.in/gomail.v2"
+	"gorm.io/gorm"
 )
 
 var (
@@ -29,6 +32,7 @@ var (
 type AuthServiceInterface interface {
 	SignUp(req *models.UserSignUpRequest) (*models.AuthResponse, error)
 	SignIn(email, password string) (*models.AuthResponse, error)
+	GoogleLogin(token string) (*models.AuthResponse, error)
 	RefreshToken(refreshToken string) (string, string, error)
 	ForgotPassword(email string) error
 	VerifyResetCode(email, code string) error
@@ -49,14 +53,14 @@ func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthRespons
 		return nil, err
 	}
 
+	hashedPassword := string(hashed)
 	user := &models.User{
-		ID:        uuid.New().String(),
-		Email:     req.Email,
-		Username:  req.Username,
-		CreatedAt: time.Now(),
+		Email:         req.Email,
+		Username:      req.Username,
+		Password_Hash: &hashedPassword,
 	}
 
-	err = s.authRepo.CreateUser(user, string(hashed))
+	err = s.authRepo.CreateUser(user)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +68,48 @@ func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthRespons
 	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)
 	if err != nil {
 		return nil, err
+	}
+
+	return &models.AuthResponse{
+		Token:        accessToken,
+		User:         *user,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *AuthService) GoogleLogin(token string) (*models.AuthResponse, error) {
+	payload, err := idtoken.Validate(context.Background(), token, os.Getenv("GOOGLE_CLIENT_ID"))
+	if err != nil {
+		return nil, errors.New("invalid Google token")
+	}
+
+	email, ok := payload.Claims["email"].(string)
+	if !ok {
+		return nil, errors.New("failed to extract email from token")
+	}
+	name, _ := payload.Claims["name"].(string)
+
+	user, err := s.authRepo.FindUserByEmail(email)
+	if err == gorm.ErrRecordNotFound {
+		user = &models.User{
+			Email:    email,
+			Username: name,
+		}
+		err = s.authRepo.CreateUser(user)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user: %v", err)
+		}
+	} else if err != nil {
+		return nil, fmt.Errorf("failed to find user: %v", err)
+	}
+
+	if user.Password_Hash != nil {
+		return nil, errors.New("user already has a password")
+	}
+
+	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate tokens: %v", err)
 	}
 
 	return &models.AuthResponse{
@@ -83,7 +129,11 @@ func (s *AuthService) SignIn(email, password string) (*models.AuthResponse, erro
 		return nil, errors.New("user not found")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password_Hash), []byte(password))
+	if user.Password_Hash == nil {
+		return nil, errors.New("no password set for this account")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(*user.Password_Hash), []byte(password))
 	if err != nil {
 		return nil, errors.New("invalid credentials")
 	}
@@ -128,14 +178,12 @@ func (s *AuthService) generateAndStoreRefreshToken(userID, email string) (string
 }
 
 func (s *AuthService) RefreshToken(refreshToken string) (string, string, error) {
-	// First check if the token exists and is not revoked
 	tokenHash := hashRefreshToken(refreshToken)
 	token, err := s.authRepo.FindRefreshToken(tokenHash)
 	if err != nil {
 		return "", "", ErrInvalidToken
 	}
 
-	// Then validate the JWT
 	claims, err := validateRefreshToken(refreshToken)
 	if err != nil {
 		return "", "", ErrInvalidToken
@@ -147,7 +195,6 @@ func (s *AuthService) RefreshToken(refreshToken string) (string, string, error) 
 		return "", "", ErrInvalidToken
 	}
 
-	// Revoke the old token
 	if err := s.authRepo.RevokeRefreshToken(tokenHash); err != nil {
 		return "", "", fmt.Errorf("failed to revoke refresh token: %w", err)
 	}

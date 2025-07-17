@@ -6,11 +6,12 @@ import (
 
 	"asset-diary/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type AuthRepositoryInterface interface {
-	CreateUser(user *models.User, hashedPassword string) error
+	CreateUser(user *models.User) error
 	FindUserByEmail(email string) (*models.User, error)
 	StoreVerificationCode(email, code string, expiry time.Duration) error
 	ValidateVerificationCode(email, code string) (bool, error)
@@ -29,8 +30,9 @@ func NewAuthRepository(db *gorm.DB) *AuthRepository {
 	return &AuthRepository{DB: db}
 }
 
-func (r *AuthRepository) CreateUser(user *models.User, hashedPassword string) error {
-	user.Password_Hash = hashedPassword
+func (r *AuthRepository) CreateUser(user *models.User) error {
+	user.ID = uuid.New().String()
+	user.CreatedAt = time.Now()
 
 	result := r.DB.Create(user)
 	if result.Error != nil {
@@ -56,7 +58,7 @@ func (r *AuthRepository) UpdateUserPassword(email, hashedPassword string) error 
 		return result.Error
 	}
 
-	user.Password_Hash = hashedPassword
+	user.Password_Hash = &hashedPassword
 	result = r.DB.Save(&user)
 	if result.Error != nil {
 		log.Println("Failed to update password:", result.Error)
