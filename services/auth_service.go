@@ -92,6 +92,7 @@ func (s *AuthService) GoogleLogin(token string) (*models.AuthResponse, error) {
 		return nil, errors.New("failed to extract email from token")
 	}
 	name, _ := payload.Claims["name"].(string)
+	googleID, _ := payload.Claims["sub"].(string)
 
 	user, err := s.authRepo.FindUserByEmail(email)
 	if err == gorm.ErrRecordNotFound {
@@ -99,6 +100,7 @@ func (s *AuthService) GoogleLogin(token string) (*models.AuthResponse, error) {
 			Email:    email,
 			Username: name,
 		}
+		user.LinkGoogleAccount(googleID, email)
 		err = s.authRepo.CreateUser(user)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user: %v", err)
