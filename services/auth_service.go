@@ -109,8 +109,14 @@ func (s *AuthService) GoogleLogin(token string) (*models.AuthResponse, error) {
 		return nil, fmt.Errorf("failed to find user: %v", err)
 	}
 
-	if user.Password_Hash != nil {
-		return nil, errors.New("user already has a password")
+	if user.IsGoogleLinked() {
+		if *user.GoogleID != googleID {
+			return nil, errors.New("this Google account is already linked to a different user account")
+		}
+	} else {
+		if user.Password_Hash != nil {
+			return nil, errors.New("this email is already registered with a password. Please sign in with your password instead")
+		}
 	}
 
 	accessToken, refreshToken, err := s.generateAndStoreRefreshToken(user.ID, user.Email)
