@@ -176,6 +176,77 @@
             },
             "description": "Logs out the user and clears the refresh token cookie"
           }
+        },
+        {
+          "name": "Link Google Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"your_google_id_token_here\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/google/link",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "google", "link"]
+            },
+            "description": "Link a Google account to the authenticated user"
+          }
+        },
+        {
+          "name": "Unlink Google Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/auth/google/unlink",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "google", "unlink"]
+            },
+            "description": "Unlink the Google account from the authenticated user"
+          }
+        },
+        {
+          "name": "Get Google Account Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/auth/google/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "google", "status"]
+            },
+            "description": "Get the Google account link status for the authenticated user"
+          }
         }
       ]
     },

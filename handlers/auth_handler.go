@@ -30,11 +30,13 @@ func getRefreshTokenExpirySeconds() int {
 
 type AuthHandler struct {
 	authService services.AuthServiceInterface
+	userService services.UserServiceInterface
 }
 
-func NewAuthHandler(authService services.AuthServiceInterface) *AuthHandler {
+func NewAuthHandler(authService services.AuthServiceInterface, userService services.UserServiceInterface) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		userService: userService,
 	}
 }
 
@@ -213,7 +215,15 @@ type GoogleLoginRequest struct {
 	Token string `json:"token" binding:"required"`
 }
 
-// AuthResponse 定義與前端 auth-api 一致的響應結構
+type GoogleLinkRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+type GoogleAccountStatusResponse struct {
+	IsLinked    bool   `json:"is_linked"`
+	GoogleEmail string `json:"google_email,omitempty"`
+}
+
 type AuthResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refreshToken"`
@@ -243,4 +253,83 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *AuthHandler) LinkGoogleAccount(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, models.NewAppError(
+			models.ErrCodeUnauthorized,
+			"User not authenticated",
+		))
+		return
+	}
+
+	var req GoogleLinkRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.NewAppError(
+			models.ErrCodeInvalidRequest,
+			err.Error(),
+		))
+		return
+	}
+
+	if err := h.userService.LinkGoogleAccount(userID, req.Token); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "invalid Google token" {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *AuthHandler) UnlinkGoogleAccount(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, models.NewAppError(
+			models.ErrCodeUnauthorized,
+			"User not authenticated",
+		))
+		return
+	}
+
+	if err := h.userService.UnlinkGoogleAccount(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *AuthHandler) GetGoogleAccountStatus(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, models.NewAppError(
+			models.ErrCodeUnauthorized,
+			"User not authenticated",
+		))
+		return
+	}
+
+	isLinked, err := h.userService.GetGoogleAccountStatus(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.NewAppError(
+			models.ErrCodeInternal,
+			err.Error(),
+		))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"isLinked": isLinked,
+	})
 }

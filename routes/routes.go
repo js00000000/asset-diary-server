@@ -75,6 +75,13 @@ func SetupRoutes(router *gin.RouterGroup,
 			trades.DELETE("/:id", tradeHandler.DeleteTrade)
 		}
 
+		googleAuth := protected.Group("/auth/google")
+		{
+			googleAuth.POST("/link", authHandler.LinkGoogleAccount)
+			googleAuth.POST("/unlink", authHandler.UnlinkGoogleAccount)
+			googleAuth.GET("/status", authHandler.GetGoogleAccountStatus)
+		}
+
 		protected.GET("/holdings", holdingHandler.ListHoldings)
 		protected.GET("/stock/price/:symbol", assetPriceHandler.GetStockPrice)
 		protected.GET("/crypto/price/:symbol", assetPriceHandler.GetCryptoPrice)

@@ -40,11 +40,15 @@ type AuthServiceInterface interface {
 }
 
 type AuthService struct {
-	authRepo repositories.AuthRepositoryInterface
+	authRepo    repositories.AuthRepositoryInterface
+	userService UserServiceInterface
 }
 
-func NewAuthService(authRepo repositories.AuthRepositoryInterface) *AuthService {
-	return &AuthService{authRepo: authRepo}
+func NewAuthService(authRepo repositories.AuthRepositoryInterface, userService UserServiceInterface) *AuthService {
+	return &AuthService{
+		authRepo:    authRepo,
+		userService: userService,
+	}
 }
 
 func (s *AuthService) SignUp(req *models.UserSignUpRequest) (*models.AuthResponse, error) {

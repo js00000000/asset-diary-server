@@ -135,11 +135,11 @@ func main() {
 	userDailyTotalAssetValueRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
 
 	// Initialize services
-	authService := services.NewAuthService(authRepo)
+	userService := services.NewUserService(userRepo)
+	authService := services.NewAuthService(authRepo, userService)
 	profileService := services.NewProfileService(profileRepo)
 	accountService := services.NewAccountService(accountRepo)
 	tradeService := services.NewTradeService(tradeRepo)
-	userService := services.NewUserService(userRepo)
 	geminiChatService := services.NewGeminiChatService()
 	geminiAssetPriceService := services.NewGeminiAssetPriceService(geminiChatService)
 	assetPriceService := services.NewAssetPriceService()
@@ -163,7 +163,7 @@ func main() {
 
 	// Initialize handlers
 	cronHandler := handlers.NewCronHandler(exchangeRateService, dailyAssetService)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, userService)
 	profileHandler := handlers.NewProfileHandler(profileService, userService)
 	accountHandler := handlers.NewAccountHandler(accountService, exchangeRateService, profileService)
 	tradeHandler := handlers.NewTradeHandler(tradeService)

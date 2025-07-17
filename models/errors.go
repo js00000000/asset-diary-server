@@ -11,6 +11,7 @@ const (
 	ErrCodeDuplicateUsername ErrorCode = "DUPLICATE_USERNAME"
 	ErrCodeInternal          ErrorCode = "INTERNAL_ERROR"
 	ErrCodeInvalidRequest    ErrorCode = "INVALID_REQUEST"
+	ErrCodeUnauthorized      ErrorCode = "UNAUTHORIZED"
 )
 
 type AppError struct {
