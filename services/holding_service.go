@@ -45,17 +45,6 @@ func NewHoldingService(
 }
 
 func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
-	trades, err := s.tradeService.ListTrades(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	assetMap, err := calculateHoldings(trades)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get user's default currency from profile
 	defaultCurrency, err := s.profileService.GetDefaultCurrency(userID)
 	if err != nil {
 		log.Printf("Error getting user profile: %v", err)
@@ -68,110 +57,127 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		return nil, fmt.Errorf("failed to get exchange rates: %w", err)
 	}
 
-	// Convert map to slice and filter out zero quantity assets
-	assets := []models.Holding{}
-	for _, asset := range assetMap {
-		if asset.Quantity > 0 {
-			tickerInfo, err := s.getCurrentPrice(asset.Ticker, asset.AssetType)
-			if err != nil {
-				log.Printf("Error fetching price for %s %s: %v", asset.AssetType, asset.Ticker, err)
-				asset.Price = 0
-				asset.TotalValue = 0
-			} else {
-				asset.Price = tickerInfo.Price
-				asset.TotalValue = asset.Price * asset.Quantity
-			}
-			asset.TotalCost = asset.AverageCost * asset.Quantity
-			asset.GainLoss = asset.TotalValue - asset.TotalCost
-			asset.GainLossPercentage = (asset.GainLoss / asset.TotalCost) * 100
-			asset.TotalValueInDefaultCurrency = asset.TotalValue / rates[asset.Currency]
-			assets = append(assets, *asset)
+	trades, err := s.tradeService.ListTrades(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	tradesMap := make(map[string][]models.Trade)
+	for _, trade := range trades {
+		key := fmt.Sprintf("%s_%s_%s", trade.AssetType, trade.Ticker, trade.Currency)
+		tradesMap[key] = append(tradesMap[key], trade)
+	}
+
+	holdings := make(map[string]*models.Holding)
+	for _, trades := range tradesMap {
+		key := fmt.Sprintf("%s_%s_%s", trades[0].AssetType, trades[0].Ticker, trades[0].Currency)
+
+		holding, err := calculateHolding(trades)
+		if err != nil {
+			log.Printf("Error calculating holding for trade %s: %v", trades[0].ID, err)
+			continue
 		}
+
+		if holding.Quantity > 0 {
+			holdings[key] = holding
+		}
+	}
+
+	assets := []models.Holding{}
+	for _, holding := range holdings {
+		tickerInfo, err := s.getCurrentPrice(holding.Ticker, holding.AssetType)
+		if err != nil {
+			log.Printf("Error fetching price for %s %s: %v", holding.AssetType, holding.Ticker, err)
+			holding.Price = 0
+			holding.TotalValue = 0
+		} else {
+			holding.Price = tickerInfo.Price
+			holding.TotalValue = holding.Price * holding.Quantity
+		}
+		holding.TotalCost = holding.AverageCost * holding.Quantity
+		holding.GainLoss = holding.TotalValue - holding.TotalCost
+		if holding.TotalCost > 0 {
+			holding.GainLossPercentage = (holding.GainLoss / holding.TotalCost) * 100
+		}
+		if rate, ok := rates[holding.Currency]; ok && rate > 0 {
+			holding.TotalValueInDefaultCurrency = holding.TotalValue / rate
+		}
+		assets = append(assets, *holding)
 	}
 
 	return assets, nil
 }
 
-func calculateHoldings(trades []models.Trade) (map[string]*models.Holding, error) {
-	type fifoBuyTrade struct {
-		Quantity float64
-		Price    float64
-		TradeID  string
+func calculateHolding(trades []models.Trade) (*models.Holding, error) {
+	if len(trades) == 0 {
+		return nil, fmt.Errorf("no trades provided")
+	}
+
+	holding := &models.Holding{
+		Ticker:     trades[0].Ticker,
+		TickerName: trades[0].TickerName,
+		AssetType:  trades[0].AssetType,
+		Currency:   trades[0].Currency,
 	}
 
 	sort.Slice(trades, func(i, j int) bool {
 		return trades[i].TradeDate.Before(trades[j].TradeDate)
 	})
 
-	buyQueues := make(map[string][]fifoBuyTrade)
+	type fifoBuyTrade struct {
+		Quantity float64
+		Price    float64
+	}
 
-	currentHoldings := make(map[string]*models.Holding)
+	var buyQueue []fifoBuyTrade
 
 	for _, trade := range trades {
-		key := fmt.Sprintf("%s_%s_%s", trade.AssetType, trade.Ticker, trade.Currency)
-
-		if _, ok := currentHoldings[key]; !ok {
-			currentHoldings[key] = &models.Holding{
-				Ticker:     trade.Ticker,
-				TickerName: trade.TickerName,
-				AssetType:  trade.AssetType,
-				Currency:   trade.Currency,
-			}
-		}
-
-		holding := currentHoldings[key]
-
 		switch trade.Type {
 		case "buy":
-			buyQueues[key] = append(buyQueues[key], fifoBuyTrade{
+			buyQueue = append(buyQueue, fifoBuyTrade{
 				Quantity: trade.Quantity,
 				Price:    trade.Price,
-				TradeID:  trade.ID,
 			})
-
 			holding.TotalCost += trade.Quantity * trade.Price
 			holding.Quantity += trade.Quantity
+			holding.AverageCost = holding.TotalCost / holding.Quantity
 
 		case "sell":
-			sellQuantity := trade.Quantity
-
-			if holding.Quantity < sellQuantity {
-				return nil, fmt.Errorf("holding %s sell quantity %.2f exceeds holding quantity %.2f, trade ID: %s", key, sellQuantity, holding.Quantity, trade.ID)
+			if trade.Quantity <= 0 {
+				return nil, fmt.Errorf("sell quantity must be positive, got %.2f", trade.Quantity)
 			}
 
-			for sellQuantity > 0 && len(buyQueues[key]) > 0 {
-				oldestBuy := &buyQueues[key][0]
+			sellQuantity := trade.Quantity
+			if holding.Quantity < sellQuantity {
+				return nil, fmt.Errorf("insufficient quantity to sell %s, attempted to sell %.2f but only have %.2f",
+					trade.Ticker, sellQuantity, holding.Quantity)
+			}
 
+			for sellQuantity > 0 && len(buyQueue) > 0 {
+				oldestBuy := &buyQueue[0]
 				if oldestBuy.Quantity <= sellQuantity {
 					holding.TotalCost -= oldestBuy.Quantity * oldestBuy.Price
-					holding.Quantity -= oldestBuy.Quantity
 					sellQuantity -= oldestBuy.Quantity
-					buyQueues[key] = buyQueues[key][1:] // remove the oldest buy record
+					buyQueue = buyQueue[1:]
 				} else {
 					holding.TotalCost -= sellQuantity * oldestBuy.Price
-					holding.Quantity -= sellQuantity
 					oldestBuy.Quantity -= sellQuantity
 					sellQuantity = 0
 				}
 			}
-		}
 
-		if holding.Quantity > 0 {
-			holding.AverageCost = holding.TotalCost / holding.Quantity
-		} else {
-			holding.AverageCost = 0
-			holding.TotalCost = 0
-		}
+			holding.Quantity -= trade.Quantity
+			if holding.Quantity > 0 {
+				holding.AverageCost = holding.TotalCost / holding.Quantity
+			} else {
+				holding.AverageCost = 0
+				holding.TotalCost = 0
+			}
 
-		currentHoldings[key] = holding
-	}
-
-	finalHoldings := make(map[string]*models.Holding)
-	for key, h := range currentHoldings {
-		if h.Quantity > 0 {
-			finalHoldings[key] = h
+		default:
+			return nil, fmt.Errorf("unsupported trade type: %s", trade.Type)
 		}
 	}
 
-	return finalHoldings, nil
+	return holding, nil
 }
