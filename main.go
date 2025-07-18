@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"asset-diary/db"
 	"asset-diary/handlers"
@@ -22,6 +23,13 @@ import (
 )
 
 func main() {
+	// Set the timezone to Asia/Taipei (UTC+8)
+	loc, err := time.LoadLocation("Asia/Taipei")
+	if err != nil {
+		log.Fatalf("Error loading location: %v", err)
+	}
+	time.Local = loc // Set the default timezone for the application
+
 	env := os.Getenv("ENV")
 	if env == "" {
 		env = "development"
