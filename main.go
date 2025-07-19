@@ -42,11 +42,11 @@ func main() {
 	dbConn := db.InitDB()
 
 	// Initialize Redis
-	_, err = db.InitRedis()
+	redisClient, err := db.InitRedis()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
-	defer db.GetRedis().Close()
+	defer redisClient.Close()
 
 	// Run DB migrations before starting the server
 	dbURL := os.Getenv("DATABASE_URL")
@@ -145,7 +145,7 @@ func main() {
 	accountRepo := repositories.NewAccountRepository(dbConn)
 	authRepo := repositories.NewAuthRepository(dbConn)
 	userRepo := repositories.NewUserRepository(dbConn)
-	priceCacheRepo := repositories.NewPriceCacheRepository(dbConn)
+	priceCacheRepo := repositories.NewPriceCacheRepository(redisClient)
 	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
 	userDailyTotalAssetValueRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
 

@@ -3,13 +3,15 @@ package models
 import "time"
 
 type PriceCache struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	CacheKey  string    `gorm:"uniqueIndex;not null" json:"cache_key"`
-	Symbol    string    `gorm:"not null" json:"symbol"`
-	Name      string    `gorm:"not null" json:"name"`
-	Price     float64   `gorm:"type:decimal(24,8);not null" json:"price"`
-	Currency  string    `gorm:"not null" json:"currency"`
-	ExpiresAt time.Time `gorm:"not null;index" json:"expires_at"`
-	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	AssetType string    `json:"asset_type"`
+	Symbol    string    `json:"symbol"`
+	Name      string    `json:"name"`
+	Price     float64   `json:"price"`
+	Currency  string    `json:"currency"`
+	ExpiresAt time.Time `json:"expires_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (p *PriceCache) GetRedisKey() string {
+	return p.AssetType + "_" + p.Symbol
 }

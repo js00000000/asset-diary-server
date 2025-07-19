@@ -87,6 +87,7 @@ func (s *AssetPriceService) getTaiwanStockPrice(symbol string) (*models.TickerIn
 	}
 
 	return &models.TickerInfo{
+		AssetType:   "stock",
 		Price:       price,
 		Symbol:      symbol,
 		Name:        stockInfo.N,
@@ -131,6 +132,7 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*models.TickerInfo, e
 	}
 
 	return &models.TickerInfo{
+		AssetType:   "crypto",
 		Price:       price,
 		Symbol:      symbol,
 		Name:        symbol,
@@ -179,6 +181,7 @@ func (s *AssetPriceService) getUSStockPrice(symbol string) (*models.TickerInfo, 
 
 	quote := quotes[0]
 	return &models.TickerInfo{
+		AssetType:   "stock",
 		Price:       quote.Price,
 		Symbol:      quote.Symbol,
 		Name:        quote.Name,

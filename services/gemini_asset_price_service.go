@@ -79,6 +79,7 @@ Market: %s, Input code: %s`, time.Now().Format(time.RFC3339), market, strings.To
 	}
 
 	tickerInfo.LastUpdated = time.Now().Format(time.RFC3339)
+	tickerInfo.AssetType = "stock"
 
 	return &tickerInfo, nil
 }
@@ -116,6 +117,7 @@ Input symbol: %s`, time.Now().Format(time.RFC3339), strings.ToUpper(symbol))
 	}
 
 	tickerInfo.LastUpdated = time.Now().Format(time.RFC3339)
+	tickerInfo.AssetType = "crypto"
 
 	return &tickerInfo, nil
 }
