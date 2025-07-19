@@ -208,6 +208,7 @@ func main() {
 		redisHandler,
 	)
 
+	app.GET("/kaithhealthcheck", healthCheckHandler.HealthCheck) // for leapcell
 	app.GET("/swagger/*any", ginSwaggerHandler())
 
 	app.Run(":3000")
