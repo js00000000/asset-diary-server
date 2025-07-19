@@ -333,7 +333,7 @@
             "header": [
               {
                 "key": "X-API-Key",
-                "value": "{{cronApiKey}}",
+                "value": "{{apiKey}}",
                 "type": "text"
               },
               {
@@ -358,7 +358,7 @@
             "header": [
               {
                 "key": "X-API-Key",
-                "value": "{{cronApiKey}}",
+                "value": "{{apiKey}}",
                 "type": "text"
               },
               {
@@ -374,6 +374,91 @@
               "path": ["api", "cron", "record-daily-assets-value"]
             },
             "description": "Records the current total asset values for all users. Requires API key authentication."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Redis",
+      "item": [
+        {
+          "name": "Get Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/redis/get/:key",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "redis", "get", ":key"],
+              "variable": [
+                {
+                  "key": "key",
+                  "value": "your_key_here"
+                }
+              ]
+            },
+            "description": "Get a value by key from Redis"
+          }
+        },
+        {
+          "name": "List Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/redis/keys?pattern=*",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "redis", "keys"],
+              "query": [
+                {
+                  "key": "pattern",
+                  "value": "*"
+                }
+              ]
+            },
+            "description": "List all keys matching a pattern (default: '*')"
+          }
+        },
+        {
+          "name": "Flush Database",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/api/redis/flush",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "redis", "flush"]
+            },
+            "description": "Delete all keys in the current Redis database"
           }
         }
       ]
@@ -403,9 +488,9 @@
       "value": ""
     },
     {
-      "key": "cronApiKey",
-      "value": "your_cron_api_key_here",
-      "description": "API key for accessing cron endpoints"
+      "key": "apiKey",
+      "value": "your_api_key_here",
+      "description": "API key for accessing endpoints"
     }
   ],
   "event": [

@@ -11,7 +11,7 @@ import (
 func APIKeyAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key")
-		expectedKey := os.Getenv("CRON_API_KEY")
+		expectedKey := os.Getenv("API_KEY")
 
 		if expectedKey == "" {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "server configuration error"})

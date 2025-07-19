@@ -4,7 +4,6 @@ import (
 	"asset-diary/db"
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,43 +16,6 @@ func NewRedisHandler() *RedisHandler {
 	return &RedisHandler{
 		redisClient: db.GetRedis(),
 	}
-}
-
-type SetKeyRequest struct {
-	Key   string        `json:"key" binding:"required"`
-	Value string        `json:"value" binding:"required"`
-	TTL   time.Duration `json:"ttl_seconds"` // TTL in seconds
-}
-
-// SetKey sets a key-value pair in Redis
-// @Summary Set a key-value pair in Redis
-// @Description Set a key with optional TTL (in seconds)
-// @Tags redis
-// @Accept json
-// @Produce json
-// @Param input body SetKeyRequest true "Key-Value pair with optional TTL"
-// @Success 200 {object} map[string]interface{}
-// @Router /api/redis/set [post]
-func (h *RedisHandler) SetKey(c *gin.Context) {
-	var req SetKeyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx := context.Background()
-	err := h.redisClient.Set(ctx, req.Key, req.Value, req.TTL*time.Second).Err()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"key":    req.Key,
-		"value":  req.Value,
-		"ttl":    req.TTL,
-	})
 }
 
 // GetKey gets a value by key from Redis
@@ -129,5 +91,28 @@ func (h *RedisHandler) ListKeys(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"count": len(keys),
 		"keys":  result,
+	})
+}
+
+// FlushKeys deletes all keys in the current database
+// @Summary Delete all keys in the current database
+// @Description Flush all keys from the current Redis database
+// @Tags redis
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /api/redis/flush [post]
+func (h *RedisHandler) FlushKeys(c *gin.Context) {
+	ctx := context.Background()
+
+	// Flush all keys in the current database
+	status, err := h.redisClient.FlushDB(ctx).Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  status,
+		"message": "All keys have been deleted from the current database",
 	})
 }

@@ -33,23 +33,21 @@ func SetupRoutes(router *gin.RouterGroup,
 		public.POST("/google", authHandler.GoogleLogin)
 	}
 
-	// Redis test endpoints
 	redisGroup := router.Group("/redis")
+	redisGroup.Use(middleware.APIKeyAuthMiddleware())
 	{
-		redisGroup.POST("/set", redisHandler.SetKey)
 		redisGroup.GET("/get/:key", redisHandler.GetKey)
 		redisGroup.GET("/keys", redisHandler.ListKeys)
+		redisGroup.POST("/flush", redisHandler.FlushKeys)
 	}
 
 	geminiTestHandler.RegisterRoutes(router.Group(""))
 
-	// Public exchange rate endpoints
 	exchangeRates := router.Group("/exchange-rates")
 	{
 		exchangeRates.GET("/:base_currency", exchangeRateHandler.GetRatesByBaseCurrency)
 	}
 
-	// Cron endpoints with API key auth
 	cronGroup := router.Group("/cron")
 	cronGroup.Use(middleware.APIKeyAuthMiddleware())
 	{

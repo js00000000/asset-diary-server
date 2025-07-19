@@ -9,19 +9,18 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RedisClient is an interface that matches the Redis client methods we use
 type RedisClient interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	Get(ctx context.Context, key string) *redis.StringCmd
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	TTL(ctx context.Context, key string) *redis.DurationCmd
 	Keys(ctx context.Context, pattern string) *redis.StringSliceCmd
+	FlushDB(ctx context.Context) *redis.StatusCmd
 	Close() error
 }
 
 var redisClient *redis.Client
 
-// InitRedis initializes and returns a Redis client
 func InitRedis() (RedisClient, error) {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -34,14 +33,12 @@ func InitRedis() (RedisClient, error) {
 		return nil, err
 	}
 
-	// Add additional configuration
 	opt.MaxRetries = 3
 	opt.MinRetryBackoff = 8 * time.Millisecond
 	opt.MaxRetryBackoff = 512 * time.Millisecond
 
 	client := redis.NewClient(opt)
 
-	// Test the connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -50,12 +47,10 @@ func InitRedis() (RedisClient, error) {
 		return nil, err
 	}
 
-	// Set global Redis client
 	redisClient = client
 	return client, nil
 }
 
-// GetRedis returns the global Redis client
 func GetRedis() RedisClient {
 	return redisClient
 }
