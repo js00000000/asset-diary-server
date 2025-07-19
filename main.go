@@ -41,6 +41,13 @@ func main() {
 
 	dbConn := db.InitDB()
 
+	// Initialize Redis
+	_, err = db.InitRedis()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer db.GetRedis().Close()
+
 	// Run DB migrations before starting the server
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -182,6 +189,9 @@ func main() {
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 	dailyTotalAssetValueHandler := handlers.NewDailyTotalAssetValueHandler(dailyAssetService)
 
+	// Initialize Redis handler
+	redisHandler := handlers.NewRedisHandler()
+
 	// Set up routes with all handlers
 	routes.SetupRoutes(app.Group("/api"),
 		authHandler,
@@ -195,6 +205,7 @@ func main() {
 		healthCheckHandler,
 		dailyTotalAssetValueHandler,
 		cronHandler,
+		redisHandler,
 	)
 
 	app.GET("/swagger/*any", ginSwaggerHandler())

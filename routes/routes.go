@@ -19,6 +19,7 @@ func SetupRoutes(router *gin.RouterGroup,
 	healthCheckHandler *handlers.HealthCheckHandler,
 	dailyTotalAssetValueHandler *handlers.DailyTotalAssetValueHandler,
 	cronHandler *handlers.CronHandler,
+	redisHandler *handlers.RedisHandler,
 ) {
 	router.GET("/healthz", healthCheckHandler.HealthCheck)
 	public := router.Group("/auth")
@@ -30,6 +31,14 @@ func SetupRoutes(router *gin.RouterGroup,
 		public.POST("/forgot-password", authHandler.ForgotPassword)
 		public.POST("/verify-reset-code", authHandler.VerifyResetCode)
 		public.POST("/google", authHandler.GoogleLogin)
+	}
+
+	// Redis test endpoints
+	redisGroup := router.Group("/redis")
+	{
+		redisGroup.POST("/set", redisHandler.SetKey)
+		redisGroup.GET("/get/:key", redisHandler.GetKey)
+		redisGroup.GET("/keys", redisHandler.ListKeys)
 	}
 
 	geminiTestHandler.RegisterRoutes(router.Group(""))
