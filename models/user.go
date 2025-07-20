@@ -19,7 +19,7 @@ func (User) TableName() string {
 type UserSignUpRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=8,containsany=ABCDEFGHIJKLMNOPQRSTUVWXYZ,containsany=abcdefghijklmnopqrstuvwxyz,containsany=0123456789"`
 }
 
 type UserSignInRequest struct {
