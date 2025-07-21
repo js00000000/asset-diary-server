@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"asset-diary/models"
 	"asset-diary/services/interfaces"
 	"net/http"
 	"strings"
@@ -26,7 +27,7 @@ func NewAssetPriceHandler(assetPriceService interfaces.AssetPriceServiceInterfac
 func (h *AssetPriceHandler) GetStockPrice(c *gin.Context) {
 	symbol := c.Param("symbol")
 	if symbol == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Symbol is required"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Symbol is required"))
 		return
 	}
 
@@ -45,7 +46,7 @@ func (h *AssetPriceHandler) GetStockPrice(c *gin.Context) {
 func (h *AssetPriceHandler) GetCryptoPrice(c *gin.Context) {
 	symbol := c.Param("symbol")
 	if symbol == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Symbol is required"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Symbol is required"))
 		return
 	}
 
@@ -60,16 +61,15 @@ func (h *AssetPriceHandler) GetCryptoPrice(c *gin.Context) {
 
 // handlePriceError handles common price-related errors
 func (h *AssetPriceHandler) handlePriceError(c *gin.Context, err error) {
-	statusCode := http.StatusInternalServerError
 	errMsg := err.Error()
 
 	// More specific error handling
 	switch {
 	case strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "no data"):
-		statusCode = http.StatusNotFound
+		c.JSON(http.StatusNotFound, models.NewAppError(models.ErrCodeInvalidRequest, errMsg))
 	case strings.Contains(errMsg, "invalid") || strings.Contains(errMsg, "failed to fetch"):
-		statusCode = http.StatusBadRequest
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, errMsg))
+	default:
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, errMsg))
 	}
-
-	c.JSON(statusCode, gin.H{"error": errMsg})
 }

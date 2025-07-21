@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"asset-diary/models"
 	"asset-diary/services"
 
 	"github.com/gin-gonic/gin"
@@ -35,18 +36,18 @@ type ExchangeRateResponse struct {
 func (h *ExchangeRateHandler) GetRatesByBaseCurrency(c *gin.Context) {
 	baseCurrency := c.Param("base_currency")
 	if baseCurrency == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "base_currency is required"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "base_currency is required"))
 		return
 	}
 
 	rates, err := h.service.GetRatesByBaseCurrency(baseCurrency)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch exchange rates"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "failed to fetch exchange rates"))
 		return
 	}
 
 	if len(rates) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "no exchange rates found for the specified base currency"})
+		c.JSON(http.StatusNotFound, models.NewAppError(models.ErrCodeInvalidRequest, "no exchange rates found for the specified base currency"))
 		return
 	}
 

@@ -3,14 +3,15 @@ package handlers
 import (
 	"net/http"
 
+	"asset-diary/models"
 	"asset-diary/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CronHandler struct {
-	exchangeRateService    services.ExchangeRateServiceInterface
-	assetValueService      services.DailyTotalAssetValueServiceInterface
+	exchangeRateService services.ExchangeRateServiceInterface
+	assetValueService   services.DailyTotalAssetValueServiceInterface
 }
 
 func NewCronHandler(
@@ -18,8 +19,8 @@ func NewCronHandler(
 	assetValueService services.DailyTotalAssetValueServiceInterface,
 ) *CronHandler {
 	return &CronHandler{
-		exchangeRateService:    exchangeRateService,
-		assetValueService:      assetValueService,
+		exchangeRateService: exchangeRateService,
+		assetValueService:   assetValueService,
 	}
 }
 
@@ -35,11 +36,11 @@ func NewCronHandler(
 // @Router /cron/update-exchange-rates [post]
 func (h *CronHandler) UpdateExchangeRates(c *gin.Context) {
 	if err := h.exchangeRateService.FetchAndStoreRates(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update exchange rates"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "failed to update exchange rates"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Exchange rates updated successfully"})
+	c.JSON(http.StatusNoContent, nil)
 }
 
 // RecordDailyAssets godoc
@@ -54,9 +55,9 @@ func (h *CronHandler) UpdateExchangeRates(c *gin.Context) {
 // @Router /cron/record-daily-assets [post]
 func (h *CronHandler) RecordDailyAssets(c *gin.Context) {
 	if err := h.assetValueService.RecordDailyTotalAssetValue(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record daily assets"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "failed to record daily assets"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Daily assets recorded successfully"})
+	c.JSON(http.StatusNoContent, nil)
 }

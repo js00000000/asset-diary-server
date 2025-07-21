@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"asset-diary/db"
+	"asset-diary/models"
 	"context"
 	"net/http"
 
@@ -29,7 +30,7 @@ func NewRedisHandler() *RedisHandler {
 func (h *RedisHandler) GetKey(c *gin.Context) {
 	key := c.Param("key")
 	if key == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "key is required"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "key is required"))
 		return
 	}
 
@@ -39,17 +40,17 @@ func (h *RedisHandler) GetKey(c *gin.Context) {
 	val, err := h.redisClient.Get(ctx, key).Result()
 	if err != nil {
 		if err.Error() == "redis: nil" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "key not found"})
+			c.JSON(http.StatusNotFound, models.NewAppError(models.ErrCodeInvalidRequest, "key not found"))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
 	// Get TTL
 	ttl, err := h.redisClient.TTL(ctx, key).Result()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
@@ -75,7 +76,7 @@ func (h *RedisHandler) ListKeys(c *gin.Context) {
 
 	keys, err := h.redisClient.Keys(ctx, pattern).Result()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h *RedisHandler) FlushKeys(c *gin.Context) {
 	// Flush all keys in the current database
 	status, err := h.redisClient.FlushDB(ctx).Result()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 

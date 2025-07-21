@@ -25,13 +25,13 @@ func NewTradeHandler(tradeService services.TradeServiceInterface) *TradeHandler 
 func (h *TradeHandler) ListTrades(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	trades, err := h.service.ListTrades(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch trades"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "Failed to fetch trades"))
 		return
 	}
 
@@ -60,23 +60,23 @@ func (h *TradeHandler) ListTrades(c *gin.Context) {
 func (h *TradeHandler) CreateTrade(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 	var req models.TradeCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 	// Verify account belongs to user
 	okAcc, err := h.service.IsAccountOwnedByUser(req.AccountID, userID.(string))
 	if err != nil || !okAcc {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or unauthorized account_id"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid or unauthorized account_id"))
 		return
 	}
 	tradeDate, err := time.Parse("2006-01-02", req.TradeDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tradeDate format, use YYYY-MM-DD"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid tradeDate format, use YYYY-MM-DD"))
 		return
 	}
 	trade := models.Trade{
@@ -94,7 +94,7 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 	}
 	createdTrade, err := h.service.CreateTrade(userID.(string), trade)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create trade"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "Failed to create trade"))
 		return
 	}
 	tradeResponse := models.TradeResponse{
@@ -118,35 +118,35 @@ func (h *TradeHandler) CreateTrade(c *gin.Context) {
 func (h *TradeHandler) UpdateTrade(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 	id := c.Param("id")
 	// Check ownership of trade
 	okTrade, err := h.service.IsTradeOwnedByUser(id, userID.(string))
 	if err != nil || !okTrade {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Trade not found or unauthorized"})
+		c.JSON(http.StatusNotFound, models.NewAppError(models.ErrCodeNotFound, "Trade not found or unauthorized"))
 		return
 	}
 	var req models.TradeUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 	if req.AccountID != "" {
 		okAcc, err := h.service.IsAccountOwnedByUser(req.AccountID, userID.(string))
 		if err != nil || !okAcc {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or unauthorized account_id"})
+			c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid or unauthorized account_id"))
 			return
 		}
 	}
 	updatedTrade, err := h.service.UpdateTrade(userID.(string), id, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update trade"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "Failed to update trade"))
 		return
 	}
 	if updatedTrade == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update"})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "No fields to update"))
 		return
 	}
 	tradeResponse := models.TradeResponse{
@@ -170,17 +170,17 @@ func (h *TradeHandler) UpdateTrade(c *gin.Context) {
 func (h *TradeHandler) DeleteTrade(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 	id := c.Param("id")
 	deleted, err := h.service.DeleteTrade(userID.(string), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete trade"})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "Failed to delete trade"))
 		return
 	}
 	if !deleted {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Trade not found or unauthorized"})
+		c.JSON(http.StatusNotFound, models.NewAppError(models.ErrCodeNotFound, "Trade not found or unauthorized"))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"id": id, "deleted": true})

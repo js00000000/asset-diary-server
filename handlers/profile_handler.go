@@ -23,13 +23,13 @@ func NewProfileHandler(profileService services.ProfileServiceInterface, userServ
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	profile, err := h.profileService.GetProfile(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
@@ -58,19 +58,19 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	var req models.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 
 	err := h.profileService.ChangePassword(userID.(string), req.CurrentPassword, req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 
@@ -80,19 +80,19 @@ func (h *ProfileHandler) ChangePassword(c *gin.Context) {
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	var req models.UserUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 
 	profile, err := h.profileService.UpdateProfile(userID.(string), &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
@@ -114,13 +114,13 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 func (h *ProfileHandler) DeleteProfile(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	err := h.userService.DeleteUser(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 

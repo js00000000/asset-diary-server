@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"asset-diary/models"
 	"asset-diary/services"
 	"net/http"
 
@@ -37,19 +38,13 @@ type TestGenerateContentResponse struct {
 func (h *GeminiTestHandler) TestGenerateContent(c *gin.Context) {
 	var req TestGenerateContentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, TestGenerateContentResponse{
-			Success: false,
-			Error:   "Invalid request body",
-		})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid request body"))
 		return
 	}
 
 	response, err := h.geminiChatService.GenerateContent(req.Message)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, TestGenerateContentResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 
@@ -80,10 +75,7 @@ func (h *GeminiTestHandler) TestAssetPrice(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Invalid request: " + err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid request: " + err.Error()))
 		return
 	}
 
@@ -98,25 +90,16 @@ func (h *GeminiTestHandler) TestAssetPrice(c *gin.Context) {
 	case "crypto":
 		tickerInfo, err = h.geminiPriceService.GetCryptoPrice(req.Symbol)
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "Invalid asset type. Must be 'stock' or 'crypto'",
-		})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid asset type. Must be 'stock' or 'crypto'"))
 		return
 	}
 
 	if err != nil {
 		if err.Error() == services.InvalidSymbolError {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"error":   "Invalid symbol",
-			})
+			c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, "Invalid symbol"))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "failed to get stock price: "+err.Error()))
 		return
 	}
 

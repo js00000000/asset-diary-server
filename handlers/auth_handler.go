@@ -75,33 +75,25 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 
 	h.setRefreshTokenCookie(c, response.RefreshToken)
 
-	c.JSON(http.StatusCreated, gin.H{
-		"token":        response.Token,
-		"refreshToken": response.RefreshToken,
-		"user":         response.User,
-	})
+	c.JSON(http.StatusCreated, response)
 }
 
 func (h *AuthHandler) SignIn(c *gin.Context) {
 	var req models.UserSignInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewAppError(models.ErrCodeInvalidRequest, err.Error()))
 		return
 	}
 
 	response, err := h.authService.SignIn(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, err.Error()))
 		return
 	}
 
 	h.setRefreshTokenCookie(c, response.RefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{
-		"token":        response.Token,
-		"refreshToken": response.RefreshToken,
-		"user":         response.User,
-	})
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
@@ -111,7 +103,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		var err error
 		header, err = c.Cookie("refresh_token")
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token missing"})
+			c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Refresh token missing"))
 			return
 		}
 	} else {
@@ -122,18 +114,18 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	accessToken, newRefreshToken, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		if err == services.ErrInvalidToken {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
+			c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Invalid or expired refresh token"))
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new tokens"})
+			c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, "Failed to generate new tokens"))
 		}
 		return
 	}
 
 	h.setRefreshTokenCookie(c, newRefreshToken)
 
-	c.JSON(http.StatusOK, gin.H{
-		"token":        accessToken,
-		"refreshToken": newRefreshToken,
+	c.JSON(http.StatusOK, models.AuthResponse{
+		Token:        accessToken,
+		RefreshToken: newRefreshToken,
 	})
 }
 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"asset-diary/models"
 	"asset-diary/services"
 	"net/http"
 
@@ -21,13 +22,13 @@ func NewHoldingHandler(holdingService services.HoldingServiceInterface) *Holding
 func (h *HoldingHandler) ListHoldings(c *gin.Context) {
 	userID, ok := c.Get("user_id")
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, models.NewAppError(models.ErrCodeUnauthorized, "Unauthorized"))
 		return
 	}
 
 	holdings, err := h.holdingService.ListHoldings(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.NewAppError(models.ErrCodeInternal, err.Error()))
 		return
 	}
 

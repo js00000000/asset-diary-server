@@ -12,6 +12,7 @@ const (
 	ErrCodeInternal          ErrorCode = "INTERNAL_ERROR"
 	ErrCodeInvalidRequest    ErrorCode = "INVALID_REQUEST"
 	ErrCodeUnauthorized      ErrorCode = "UNAUTHORIZED"
+	ErrCodeNotFound          ErrorCode = "NOT_FOUND"
 )
 
 type AppError struct {
