@@ -208,6 +208,8 @@ func main() {
 		redisHandler,
 	)
 
+	go exchangeRateService.FetchAndStoreRates()
+
 	app.GET("/kaithhealthcheck", healthCheckHandler.HealthCheck) // for leapcell
 	app.GET("/swagger/*any", ginSwaggerHandler())
 
