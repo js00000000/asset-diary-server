@@ -143,7 +143,7 @@ func (s *AssetPriceService) getCryptoPrice(symbol string) (*models.TickerInfo, e
 
 func (s *AssetPriceService) getUSStockPrice(symbol string) (*models.TickerInfo, error) {
 	apiKey := os.Getenv("FMP_API_KEY")
-	url := fmt.Sprintf("https://financialmodelingprep.com/api/v3/quote/%s?apikey=%s", symbol, apiKey)
+	url := fmt.Sprintf("https://financialmodelingprep.com/stable/quote?symbol=%s&apikey=%s", symbol, apiKey)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
