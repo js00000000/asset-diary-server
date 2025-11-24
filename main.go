@@ -158,8 +158,8 @@ func main() {
 	geminiChatService := services.NewGeminiChatService()
 	geminiAssetPriceService := services.NewGeminiAssetPriceService(geminiChatService)
 	assetPriceService := services.NewAssetPriceService()
-	fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
-	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(fallbackPriceService, priceCacheRepo)
+	// fallbackPriceService := services.NewFallbackPriceService(assetPriceService, geminiAssetPriceService)
+	assetPriceServiceCacheDecorator := services.NewPriceServiceCacheDecorator(assetPriceService, priceCacheRepo)
 	exchangeRateService := services.NewExchangeRateService(exchangeRateRepo, supportedCurrencies)
 	holdingService := services.NewHoldingService(
 		tradeService,
