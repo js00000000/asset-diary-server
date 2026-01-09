@@ -28,7 +28,7 @@ type ErrorResponse struct {
 }
 
 const InvalidSymbolError = "invalid symbol"
-const model = "gemini-2.5-flash-preview-05-20"
+const model = "gemini-3-flash"
 
 func NewGeminiChatService() *GeminiChatService {
 	apiKey := os.Getenv("GEMINI_API_KEY")
