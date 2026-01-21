@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"sync"
 )
 
 type HoldingServiceInterface interface {
@@ -83,27 +84,40 @@ func (s *HoldingService) ListHoldings(userID string) ([]models.Holding, error) {
 		}
 	}
 
-	assets := []models.Holding{}
+	assets := make([]models.Holding, 0, len(holdings))
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	for _, holding := range holdings {
-		tickerInfo, err := s.getCurrentPrice(holding.Ticker, holding.AssetType)
-		if err != nil {
-			log.Printf("Error fetching price for %s %s: %v", holding.AssetType, holding.Ticker, err)
-			holding.Price = 0
-			holding.TotalValue = 0
-		} else {
-			holding.Price = tickerInfo.Price
-			holding.TotalValue = holding.Price * holding.Quantity
-		}
-		holding.TotalCost = holding.AverageCost * holding.Quantity
-		holding.GainLoss = holding.TotalValue - holding.TotalCost
-		if holding.TotalCost > 0 {
-			holding.GainLossPercentage = (holding.GainLoss / holding.TotalCost) * 100
-		}
-		if rate, ok := rates[holding.Currency]; ok && rate > 0 {
-			holding.TotalValueInDefaultCurrency = holding.TotalValue / rate
-		}
-		assets = append(assets, *holding)
+		wg.Add(1)
+		go func(h *models.Holding) {
+			defer wg.Done()
+
+			tickerInfo, err := s.getCurrentPrice(h.Ticker, h.AssetType)
+			if err != nil {
+				log.Printf("Error fetching price for %s %s: %v", h.AssetType, h.Ticker, err)
+				h.Price = 0
+				h.TotalValue = 0
+			} else {
+				h.Price = tickerInfo.Price
+				h.TotalValue = h.Price * h.Quantity
+			}
+			h.TotalCost = h.AverageCost * h.Quantity
+			h.GainLoss = h.TotalValue - h.TotalCost
+			if h.TotalCost > 0 {
+				h.GainLossPercentage = (h.GainLoss / h.TotalCost) * 100
+			}
+			if rate, ok := rates[h.Currency]; ok && rate > 0 {
+				h.TotalValueInDefaultCurrency = h.TotalValue / rate
+			}
+
+			mu.Lock()
+			assets = append(assets, *h)
+			mu.Unlock()
+		}(holding)
 	}
+
+	wg.Wait()
 
 	return assets, nil
 }
