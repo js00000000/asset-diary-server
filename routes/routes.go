@@ -20,8 +20,10 @@ func SetupRoutes(router *gin.RouterGroup,
 	dailyTotalAssetValueHandler *handlers.DailyTotalAssetValueHandler,
 	cronHandler *handlers.CronHandler,
 	redisHandler *handlers.RedisHandler,
+	waitingListHandler *handlers.WaitingListHandler,
 ) {
 	router.GET("/healthz", healthCheckHandler.HealthCheck)
+	router.POST("/waiting-list/join", waitingListHandler.Join)
 	public := router.Group("/auth")
 	{
 		public.POST("/sign-in", authHandler.SignIn)

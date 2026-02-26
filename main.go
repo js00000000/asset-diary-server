@@ -148,6 +148,7 @@ func main() {
 	priceCacheRepo := repositories.NewPriceCacheRepository(redisClient)
 	exchangeRateRepo := repositories.NewExchangeRateRepository(dbConn)
 	userDailyTotalAssetValueRepo := repositories.NewUserDailyTotalAssetValueRepository(dbConn)
+	waitingListRepo := repositories.NewWaitingListRepository(dbConn)
 
 	// Initialize services
 	userService := services.NewUserService(userRepo)
@@ -175,6 +176,7 @@ func main() {
 		profileService,
 		userService,
 	)
+	waitingListService := services.NewWaitingListService(waitingListRepo)
 
 	// Initialize handlers
 	cronHandler := handlers.NewCronHandler(exchangeRateService, dailyAssetService)
@@ -188,6 +190,7 @@ func main() {
 	healthCheckHandler := handlers.NewHealthCheckHandler()
 	exchangeRateHandler := handlers.NewExchangeRateHandler(exchangeRateService)
 	dailyTotalAssetValueHandler := handlers.NewDailyTotalAssetValueHandler(dailyAssetService)
+	waitingListHandler := handlers.NewWaitingListHandler(waitingListService)
 
 	// Initialize Redis handler
 	redisHandler := handlers.NewRedisHandler()
@@ -206,6 +209,7 @@ func main() {
 		dailyTotalAssetValueHandler,
 		cronHandler,
 		redisHandler,
+		waitingListHandler,
 	)
 
 	go exchangeRateService.FetchAndStoreRates()
