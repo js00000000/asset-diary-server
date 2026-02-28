@@ -13,6 +13,7 @@ const (
 	ErrCodeInvalidRequest    ErrorCode = "INVALID_REQUEST"
 	ErrCodeUnauthorized      ErrorCode = "UNAUTHORIZED"
 	ErrCodeNotFound          ErrorCode = "NOT_FOUND"
+	ErrCodeProjectNotAllowed ErrorCode = "PROJECT_NOT_ALLOWED"
 )
 
 type AppError struct {

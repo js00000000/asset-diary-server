@@ -18,5 +18,12 @@ func NewWaitingListService(repo repositories.WaitingListRepositoryInterface) *Wa
 }
 
 func (s *WaitingListService) JoinWaitingList(entry *models.WaitingList) error {
+	allowed, err := s.repo.IsProjectAllowed(entry.Project)
+	if err != nil {
+		return err
+	}
+	if !allowed {
+		return models.NewAppError(models.ErrCodeProjectNotAllowed, "This project is not currently accepting new signups for the waiting list.")
+	}
 	return s.repo.Create(entry)
 }

@@ -27,6 +27,13 @@ func (h *WaitingListHandler) Join(c *gin.Context) {
 	}
 
 	if err := h.service.JoinWaitingList(&entry); err != nil {
+		if appErr, ok := err.(*models.AppError); ok {
+			if appErr.Code == models.ErrCodeProjectNotAllowed {
+				c.JSON(http.StatusBadRequest, appErr)
+				return
+			}
+		}
+
 		if models.IsDuplicateError(err, "waiting_lists_email_project_key") {
 			c.JSON(http.StatusConflict, models.NewAppError(
 				models.ErrCodeDuplicateEmail,
