@@ -16,6 +16,8 @@ type RedisClient interface {
 	TTL(ctx context.Context, key string) *redis.DurationCmd
 	Keys(ctx context.Context, pattern string) *redis.StringSliceCmd
 	FlushDB(ctx context.Context) *redis.StatusCmd
+	Incr(ctx context.Context, key string) *redis.IntCmd
+	Expire(ctx context.Context, key string, expiration time.Duration) *redis.BoolCmd
 	Close() error
 }
 

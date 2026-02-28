@@ -14,6 +14,7 @@ const (
 	ErrCodeUnauthorized      ErrorCode = "UNAUTHORIZED"
 	ErrCodeNotFound          ErrorCode = "NOT_FOUND"
 	ErrCodeProjectNotAllowed ErrorCode = "PROJECT_NOT_ALLOWED"
+	ErrCodeTooManyRequests   ErrorCode = "TOO_MANY_REQUESTS"
 )
 
 type AppError struct {

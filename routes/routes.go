@@ -3,6 +3,7 @@ package routes
 import (
 	"asset-diary/handlers"
 	"asset-diary/middleware"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,7 +24,7 @@ func SetupRoutes(router *gin.RouterGroup,
 	waitingListHandler *handlers.WaitingListHandler,
 ) {
 	router.GET("/healthz", healthCheckHandler.HealthCheck)
-	router.POST("/waiting-list/join", waitingListHandler.Join)
+	router.POST("/waiting-list/join", middleware.RateLimit(5, time.Hour), waitingListHandler.Join)
 	public := router.Group("/auth")
 	{
 		public.POST("/sign-in", authHandler.SignIn)
